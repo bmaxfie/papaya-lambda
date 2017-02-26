@@ -4,6 +4,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.AbstractMap;
+import java.util.HashMap;
 import java.util.Map;
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -13,11 +15,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class InsertUser implements RequestHandler<Map<String, Object>, String> {
+public class InsertUser implements RequestHandler<Map<String, Object>, Map<String, Object>> {
 
 
 	@Override
-	public String handleRequest(Map<String, Object> input, Context context) {
+	public Map<String, Object> handleRequest(Map<String, Object> input, Context context) {
 		context.getLogger().log("Input: " + input + "\n");
 
 		// TODO: implement your handler
@@ -48,7 +50,11 @@ public class InsertUser implements RequestHandler<Map<String, Object>, String> {
 				} catch (SQLException ignore) {
 				}
 		}
-		return null;
+		
+		Map<String, Object> response = new HashMap<String, Object>();
+		response.put("code", 200);
+		response.put("description", "SUCCESS");
+		return response;
 	}
     
     public static Connection getRemoteConnection(Context context) {
