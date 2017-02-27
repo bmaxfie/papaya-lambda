@@ -1,7 +1,10 @@
 package users.papaya.com;
 
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.AbstractMap;
@@ -11,10 +14,9 @@ import java.util.Map;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.amazonaws.util.Md5Utils;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import utils.papaya.com.UIDGenerator;
 
 public class InsertUser implements RequestHandler<Map<String, Object>, Map<String, Object>> {
 
@@ -40,13 +42,17 @@ public class InsertUser implements RequestHandler<Map<String, Object>, Map<Strin
 		FACEBOOK, GOOGLE, NONE
 	}
 	
+	private Context context;
+	private LambdaLogger logger;
+	
 	@Override
 	public Map<String, Object> handleRequest(Map<String, Object> input, Context context) {
 		
-		LambdaLogger logger = context.getLogger();
+		this.context = context;
+		this.logger = context.getLogger();
 		Map<String, Object> response = new HashMap<String, Object>();
 		SERVICE_TYPE service_type = SERVICE_TYPE.NONE;
-		long user_id = -1;
+		String user_id = "";
 		// Required request fields:
 		String username, authentication_key, service;
 		// Optional request fields:
@@ -164,16 +170,20 @@ public class InsertUser implements RequestHandler<Map<String, Object>, Map<Strin
 		 * ### Generate unique user_id number and validate its uniqueness.
 		 * 
 		 */
-		
 		Connection con = getRemoteConnection(context);
+		user_id = UIDGenerator.generateUID(username);
+		
+		for (int i = 0; userIDExists(user_id, con) && i < 3; i++) {
+			user_id = UIDGenerator.generateUID(username);
+		}
 		
 		// TODO: Execute SQL!
 		try {
 
-			String insertUser = "INSERT INTO users VALUES (" + input.get("user_id") + ", " + "'"
+			String insertUser = "INSERT INTO users VALUES ('" + input.get("user_id") + "', '"
 					+ input.get("username") + "', " + input.get("phone") + ", " + "'"
-					+ input.get("email") + "', " + input.get("authentication_key") + ", "
-					+ input.get("current_session_id") + ")";
+					+ input.get("email") + "', '" + input.get("authentication_key") + "', '"
+					+ input.get("current_session_id") + "')";
 			Statement statement = con.createStatement();
 			statement.addBatch(insertUser);
 			statement.executeBatch();
@@ -228,6 +238,38 @@ public class InsertUser implements RequestHandler<Map<String, Object>, Map<Strin
 		}
 		return null;
 	}
+    
+    
+    private boolean userIDExists(String user_id, Connection dbcon)
+    {
+    	try {
+			String getUser = "SELECT user_id from users where user_id='"+user_id+"'";
+			Statement statement = dbcon.createStatement();
+			ResultSet result = statement.executeQuery(getUser);
+			statement.close();
+			if (result.next())
+				return true;
+			else
+				return false;
+
+		} catch (SQLException ex) {
+			// handle any errors
+			logger.log("SQLException: " + ex.getMessage());
+			logger.log("SQLState: " + ex.getSQLState());
+			logger.log("VendorError: " + ex.getErrorCode());
+
+			return false;
+			
+		} finally {
+			context.getLogger().log("Closing the connection.");
+			if (dbcon != null)
+				try {
+					dbcon.close();
+				} catch (SQLException ignore) {
+					logger.log("SQL Error: Problem closing connection.");
+				}
+		}
+    }
     
     
     /**
