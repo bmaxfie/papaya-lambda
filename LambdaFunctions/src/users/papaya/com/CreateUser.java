@@ -1,24 +1,20 @@
 package users.papaya.com;
 
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.amazonaws.util.Md5Utils;
 
 import utils.papaya.com.UIDGenerator;
 
-public class InsertUser implements RequestHandler<Map<String, Object>, Map<String, Object>> {
+public class CreateUser implements RequestHandler<Map<String, Object>, Map<String, Object>> {
 
 	/** Steps to implement a generic papaya API Lambda Function:
 	 * 
@@ -168,7 +164,6 @@ public class InsertUser implements RequestHandler<Map<String, Object>, Map<Strin
 		
 		/*
 		 * ### Generate unique user_id number and validate its uniqueness.
-		 * 
 		 */
 		Connection con = getRemoteConnection(context);
 		user_id = UIDGenerator.generateUID(username);
@@ -177,7 +172,6 @@ public class InsertUser implements RequestHandler<Map<String, Object>, Map<Strin
 			user_id = UIDGenerator.generateUID(username);
 		}
 		
-		// TODO: Execute SQL!
 		try {
 
 			String insertUser = "INSERT INTO users VALUES ('" + input.get("user_id") + "', '"
