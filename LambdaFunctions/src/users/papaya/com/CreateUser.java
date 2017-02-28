@@ -156,15 +156,20 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 		/*
 		 * ### Generate unique user_id number and validate its uniqueness.
 		 */
-		Connection con = getRemoteConnection(context);
 		user_id = UIDGenerator.generateUID(username);
-		
-		for (int i = 0; userIDExists(user_id, con) && i < 3; i++) {
-			user_id = UIDGenerator.generateUID(username);
-		}
+		boolean exists = false;
+		Connection con = getRemoteConnection(context);
 		
 		try {
-
+			
+			for (int i = 0; (exists = userIDExists(user_id, con)) && i < 3; i++) {
+				user_id = UIDGenerator.generateUID(username);
+			}
+			if (exists) {
+				logger.log("ERROR: 500 Internal Server Error - Returned to client. Could not generate a UID on 3 tries.");
+				return throw500("generateUID() failed 3 times. Try recalling.");
+			}
+			
 			String insertUser = "INSERT INTO users VALUES ('" + input.get("user_id") + "', '"
 					+ input.get("username") + "', " + input.get("phone") + ", " + "'"
 					+ input.get("email") + "', '" + input.get("authentication_key") + "', '"
@@ -192,8 +197,8 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 				}
 		}
 		
-		response.put("code", 200);
-		response.put("code_description", "OK");
+		response.put("code", 201);
+		response.put("code_description", "Created");
 		response.put("user_id", user_id);
 		response.put("authentication_key", authentication_key);
 		return response;
@@ -225,35 +230,16 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 	}
     
     
-    private boolean userIDExists(String user_id, Connection dbcon)
+    private boolean userIDExists(String user_id, Connection dbcon) throws SQLException
     {
-    	try {
-			String getUser = "SELECT user_id from users where user_id='"+user_id+"'";
-			Statement statement = dbcon.createStatement();
-			ResultSet result = statement.executeQuery(getUser);
-			statement.close();
-			if (result.next())
-				return true;
-			else
-				return false;
-
-		} catch (SQLException ex) {
-			// handle any errors
-			logger.log("SQLException: " + ex.getMessage());
-			logger.log("SQLState: " + ex.getSQLState());
-			logger.log("VendorError: " + ex.getErrorCode());
-
+		String getUser = "SELECT user_id from users where user_id='"+user_id+"'";
+		Statement statement = dbcon.createStatement();
+		ResultSet result = statement.executeQuery(getUser);
+		statement.close();
+		if (result.next())
+			return true;
+		else
 			return false;
-			
-		} finally {
-			context.getLogger().log("Closing the connection.");
-			if (dbcon != null)
-				try {
-					dbcon.close();
-				} catch (SQLException ignore) {
-					logger.log("SQL Error: Problem closing connection.");
-				}
-		}
     }
     
     

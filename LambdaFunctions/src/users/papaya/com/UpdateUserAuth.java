@@ -16,7 +16,7 @@ import utils.papaya.com.AuthServiceType;
 import utils.papaya.com.UIDGenerator;
 import utils.papaya.com.Authentication;
 
-public class AuthUser implements RequestHandler<Map<String, Object>, Map<String, Object>> {
+public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<String, Object>> {
 
 	/** Steps to implement a generic papaya API Lambda Function:
 	 * 
@@ -83,66 +83,52 @@ public class AuthUser implements RequestHandler<Map<String, Object>, Map<String,
 			if (!input.containsKey("username")
 						|| !(input.get("username") instanceof String)
 						|| !((username = (String) input.get("username")) != null)
-				||!input.containsKey("email")
+				|| !input.containsKey("email")
 						|| !(input.get("email") instanceof String)
 						|| !((username = (String) input.get("email")) != null)) {
-				logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
+				
+				logger.log("ERROR: 400 Bad Request - Returned to client. Required fields (username or email) did not exist or are empty.");
 				return throw400("username or email does not exist.", "username, email");
 			}
 		}
+		else {
+			logger.log("ERROR: 400 Bad Request - Returned to client. Required auth_option to be of a set range of values.");
+			return throw400("auth_option was not of a value in the range acceptable.", "auth_option");
+		}
 		
 		// Check for proper formatting of supplied elements. Check by field.
+		//		auth_option has already been verified.
 		
-		//TODO: Complete changes from CreateUser
-		// 1. validate 'username' field is of length allowed in database, otherwise truncate.
-		if (username.length() > 45)
-			username = username.substring(0, 45);
-		
-		// 2. validate 'service' field is a recognizable type
-		if (service.contentEquals(Authentication.SERVICE_FACEBOOK)) {
-			service_type = AuthServiceType.FACEBOOK;
-		} else if (service.contentEquals(Authentication.SERVICE_GOOGLE)) {
-			service_type = AuthServiceType.GOOGLE;
-		} else {
-			logger.log("ERROR: 400 Bad Request - Returned to client. Service was of an unrecognizable type '" + service + "'.");
-			return throw400("service was of an unrecognizable type '" + service + "'.", "service");
-		}
+		// 1. validate 'user_id' if auth_option == 1.
+		if (auth_option.intValue() == 1) {
+			if (!input.containsKey("user_id")
+						|| !(input.get("user_id") instanceof String)
+						|| !((user_id = (String) input.get("user_id")) != null)) {
 				
-		// 2. validate 'authentication_key' is of length allowed?
-		// TODO: Determine more strict intro rules
-		if (service_type == AuthServiceType.FACEBOOK 
-						&& (authentication_key.length() > Authentication.FACEBOOK_KEY_MAX_LEN
-								|| authentication_key.length() < Authentication.FACEBOOK_KEY_MIN_LEN)
-				|| service_type == AuthServiceType.GOOGLE
-						&& (authentication_key.length() > Authentication.GOOGLE_KEY_MAX_LEN
-								|| authentication_key.length() < Authentication.GOOGLE_KEY_MIN_LEN)) {
-			logger.log("ERROR: 400 Bad Request - Returned to client. authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.");
-			return throw400("authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.", "authentication_key");
-		}
-		
-		
-		// 4. validate 'phone' is of acceptable length and format if it exists.
-		if (input.containsKey("phone")
-				&& (input.get("phone") instanceof Integer)) {
-			
-			// phone exists, now check if it is of proper format.
-			phone = ((Integer) input.get("phone")).intValue();
-			
-			if (// phone is 7 digits
-					!(phone > 999999l
-						&& phone < 10000000l)
-				&&
-				// phone is 10 digits
-					!(phone > 999999999l
-						&& phone < 10000000000l)) {
+				logger.log("ERROR: 400 Bad Request - Returned to client. Required user_id doesn't exist despite given auth_option value.");
+				return throw400("user_id does not exist.", "user_id");
 				
-				logger.log("ERROR: 400 Bad Request - Returned to client. phone was not formatted right (i.e. neither 7 or 10 digits long).");
-				return throw400("phone was not formatted right (i.e. neither 7 or 10 digits long) '" + phone + "'.", "phone");
+			} else if (user_id.length() > 45) {
+				user_id = user_id.substring(0, 45);
 			}
 		}
 		
-		// 5. validate 'email' is of acceptable format and length if it exists.
-		if (input.containsKey("email")
+		// 2. validate 'username' field if auth_option == 2. Check if field is of length allowed in database, otherwise truncate.
+		if (auth_option.intValue() == 2) {
+			if (!input.containsKey("username")
+						|| !(input.get("username") instanceof String)
+						|| !((username = (String) input.get("username")) != null)) {
+				
+				logger.log("ERROR: 400 Bad Request - Returned to client. Required username doesn't exist despite given auth_option value.");
+				return throw400("username does not exist.", "username");
+				
+			} else if (username.length() > 45) {
+				username = username.substring(0, 45);
+			}
+		}
+		
+		// 3. validate 'email' field if auth_option == 2. Check if field is of acceptable format and length.
+		if (auth_option.intValue() == 2 && input.containsKey("email")
 				&& (input.get("email") instanceof String)) {
 			
 			email = (String) input.get("email");
@@ -154,6 +140,18 @@ public class AuthUser implements RequestHandler<Map<String, Object>, Map<String,
 				logger.log("ERROR: 400 Bad Request - Returned to client. email was not formatted right (i.e. length or no @ or no domain) '" + email + "'.");
 				return throw400("email was not formatted right (i.e. length or no @ or no domain) '" + email + "'.", "email");
 			}
+		}
+				
+		// 4. validate 'authentication_key' is of length allowed?
+		// TODO: Determine more strict intro rules
+		if (service_type == AuthServiceType.FACEBOOK 
+						&& (authentication_key.length() > Authentication.FACEBOOK_KEY_MAX_LEN
+								|| authentication_key.length() < Authentication.FACEBOOK_KEY_MIN_LEN)
+				|| service_type == AuthServiceType.GOOGLE
+						&& (authentication_key.length() > Authentication.GOOGLE_KEY_MAX_LEN
+								|| authentication_key.length() < Authentication.GOOGLE_KEY_MIN_LEN)) {
+			logger.log("ERROR: 400 Bad Request - Returned to client. authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.");
+			return throw400("authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.", "authentication_key");
 		}
 		
 		
@@ -169,17 +167,7 @@ public class AuthUser implements RequestHandler<Map<String, Object>, Map<String,
 		 * 		
 		 * 		1. Check if 
 		 */
-		
-		/*
-		 * ### Generate unique user_id number and validate its uniqueness.
-		 */
 		Connection con = getRemoteConnection(context);
-		user_id = UIDGenerator.generateUID(username);
-		
-		for (int i = 0; userIDExists(user_id, con) && i < 3; i++) {
-			user_id = UIDGenerator.generateUID(username);
-		}
-		
 		try {
 
 			String insertUser = "INSERT INTO users VALUES ('" + input.get("user_id") + "', '"
