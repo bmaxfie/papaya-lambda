@@ -41,7 +41,7 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required request fields:
 		Integer auth_option;
-		String user_id, username, email, authentication_key;
+		String user_id = "", username = "", email = "", authentication_key = "";
 		
 		/*
 		 * 1. Check request body (validate) for proper format of fields:
@@ -162,21 +162,41 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 		// TODO: actually check authentication service here.
 		
 		
-		/*
-		 * 3a. Get any data from tables to complete request.
-		 * 		
-		 * 		1. Check if 
-		 */
+		
 		Connection con = getRemoteConnection(context);
 		try {
-
-			String insertUser = "INSERT INTO users VALUES ('" + input.get("user_id") + "', '"
-					+ input.get("username") + "', " + input.get("phone") + ", " + "'"
-					+ input.get("email") + "', '" + input.get("authentication_key") + "', '"
-					+ input.get("current_session_id") + "')";
+			
+			/*
+			 * 3a. Get any data from tables to complete request.
+			 * 
+			 * 		1. Get user_id if not supplied from API call.
+			 */
+			if (auth_option.intValue() == 2) {
+				String getuser_id = "SELECT user_id FROM users WHERE username='"+username+"' AND email='"+email+"'";
+				Statement statement = con.createStatement();
+				ResultSet result = statement.executeQuery(getuser_id);
+				statement.close();
+				if (!result.next()) {
+					logger.log("ERROR: 404 Not Found - Returned to client. No user could be found with the username and email given.");
+					return throw404("No user could be found with the username and email given.");
+				}
+				if (!result.isLast()) {
+					logger.log("ERROR: 500 Internal Server Error - Returned to client. More than one user was returned for username and email.");
+					return throw500("More than one user was returned for username and client.");
+				}
+				
+				user_id = result.getString(0);
+			}
+			
+			/*
+			 * 3b. Change tables as necessary for particular request.
+			 * 
+			 * 		1. Update authentication_key for user_id.
+			 */
+			
+			String setauth = "UPDATE users SET authentication_key='"+authentication_key+"' WHERE user_id'"+user_id+"'";
 			Statement statement = con.createStatement();
-			statement.addBatch(insertUser);
-			statement.executeBatch();
+			statement.executeUpdate(setauth);
 			statement.close();
 
 		} catch (SQLException ex) {
@@ -273,6 +293,14 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 		response.put("error_description", message);
 		response.put("fields", fields);
 		return response;
+    }
+    
+    private static Map<String, Object> throw404(String message) {
+    	Map<String, Object> response = new HashMap<String, Object>();
+    	response.put("code", 404);
+    	response.put("code_description", "Not Found");
+    	response.put("error_description", message);
+    	return response;
     }
     
     private static Map<String, Object> throw500(String message) {

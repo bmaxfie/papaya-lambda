@@ -109,7 +109,7 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 				&& (input.get("phone") instanceof Integer)) {
 			
 			// phone exists, now check if it is of proper format.
-			phone = ((Integer) input.get("phone")).intValue();
+			phone = ((Long) input.get("phone")).longValue();
 			
 			if (// phone is 7 digits
 					!(phone > 999999l
@@ -170,10 +170,10 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 				return throw500("generateUID() failed 3 times. Try recalling.");
 			}
 			
-			String insertUser = "INSERT INTO users VALUES ('" + input.get("user_id") + "', '"
-					+ input.get("username") + "', " + input.get("phone") + ", " + "'"
-					+ input.get("email") + "', '" + input.get("authentication_key") + "', '"
-					+ input.get("current_session_id") + "')";
+			String insertUser = "INSERT INTO users VALUES ('" + user_id + "', '"
+					+ username + "', " + phone + ", " + "'"
+					+ email + "', '" + authentication_key + "', '"
+					+ "" + "')";
 			Statement statement = con.createStatement();
 			statement.addBatch(insertUser);
 			statement.executeBatch();
@@ -232,7 +232,7 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
     
     private boolean userIDExists(String user_id, Connection dbcon) throws SQLException
     {
-		String getUser = "SELECT user_id from users where user_id='"+user_id+"'";
+		String getUser = "SELECT user_id FROM users WHERE user_id='"+user_id+"'";
 		Statement statement = dbcon.createStatement();
 		ResultSet result = statement.executeQuery(getUser);
 		statement.close();
