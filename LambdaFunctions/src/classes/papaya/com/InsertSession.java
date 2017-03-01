@@ -4,6 +4,8 @@ import static utils.papaya.com.ResponseGenerator.throw400;
 import static utils.papaya.com.ResponseGenerator.throw500;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
@@ -13,12 +15,11 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
-import users.papaya.com.CreateUser.SERVICE_TYPE;
 import utils.papaya.com.AuthServiceType;
 import utils.papaya.com.Authentication;
 import utils.papaya.com.UIDGenerator;
 
-public class InsertSession implements RequestHandler<Map<String, Object>, String> {
+public class InsertSession implements RequestHandler<Map<String, Object>, Map<String, Object>> {
 	/**
 	 * Steps to implement a generic papaya API Lambda Function:
 	 * 
@@ -46,12 +47,12 @@ public class InsertSession implements RequestHandler<Map<String, Object>, String
 		String authentication_key, service;
 
 		// Required request fields for SQL
-		String session_id, location_desc;
+		String session_id, location_desc, description, class_id;
 		String user_id = "";
 		Integer duration;
 		Float location_lat, location_long;
 		// Optional request fields:
-		String sponsor;
+		String sponsor = "";
 
 		/*
 		 * 1. Check request body (validate) for proper format of fields:
@@ -74,37 +75,48 @@ public class InsertSession implements RequestHandler<Map<String, Object>, String
 			return throw400("user_id or authentication_key or service do not exist.", "");
 		}
 		if (!input.containsKey("duration") 
-				|| !(input.get("duration") instanceof String)
+				|| !(input.get("duration") instanceof Integer)
 				|| !((duration = (Integer) input.get("duration")) != null)) {
 			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
 			return throw400("Duration does not exist", "");
 		}
 		if (!input.containsKey("location_lat") 
-				|| !(input.get("location_lat") instanceof String)
+				|| !(input.get("location_lat") instanceof Float)
 				|| !((location_lat = (Float) input.get("location_lat")) != null)) {
 			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
 			return throw400("location_lat does not exist", "");
 		}
 		if (!input.containsKey("location_long") 
-				|| !(input.get("location_long") instanceof String)
-				|| !((location_lat = (Float) input.get("location_long")) != null)) {
+				|| !(input.get("location_long") instanceof Float)
+				|| !((location_long = (Float) input.get("location_long")) != null)) {
 			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
 			return throw400("location_long does not exist.", "");
 		}
 		if ((!input.containsKey("session_id") 
 				|| !(input.get("session_id") instanceof String)
-				|| !((user_id = (String) input.get("session_id")) != null))) {
+				|| !((session_id = (String) input.get("session_id")) != null))) {
 			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
 			return throw400("session_id does not exist.", "");
 		}
 		if ((!input.containsKey("location_desc") 
 				|| !(input.get("location_desc") instanceof String)
-				|| !((user_id = (String) input.get("location_desc")) != null))) {
+				|| !((location_desc = (String) input.get("location_desc")) != null))) {
 			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
 			return throw400("location_desc does not exist.", "");
 		}
 		
-		// Check for proper formatting of supplied elements. Check by field.
+		if ((!input.containsKey("description") 
+				|| !(input.get("description") instanceof String)
+				|| !((description = (String) input.get("description")) != null))) {
+			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
+			return throw400("description does not exist.", "");
+		}
+		if ((!input.containsKey("class_id") 
+				|| !(input.get("class_id") instanceof String)
+				|| !((class_id = (String) input.get("class_id")) != null))) {
+			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
+			return throw400("class_id does not exist.", "");
+		}
 		
 		// 2. validate 'service' field is a recognizable type
 		if (service.contentEquals(Authentication.SERVICE_FACEBOOK)) {
@@ -170,8 +182,9 @@ public class InsertSession implements RequestHandler<Map<String, Object>, String
 
 		try {
 
-			for (int i = 0; (exists = userIDExists(user_id, con)) && i < 3; i++) {
-				user_id = UIDGenerator.generateUID(username);
+			for (int i = 0; (exists = sessionIDExists(session_id, con)) && i < 3; i++) {
+				//generate a session_id with user_id as the salt
+				session_id = UIDGenerator.generateUID(user_id);
 			}
 			if (exists) {
 				logger.log(
@@ -179,11 +192,14 @@ public class InsertSession implements RequestHandler<Map<String, Object>, String
 				return throw500("generateUID() failed 3 times. Try recalling.");
 			}
 
-			String insertSession = "INSERT INTO users VALUES ('" + user_id + "', '" + username + "', " + phone + ", "
-					+ "'" + email + "', '" + authentication_key + "', '" + "" + "')";
+			String insertSession = "INSERT INTO sessions VALUES ('" + session_id + "', '" + user_id + "', " + duration + ", '" + location_desc + "', '" + description + "', '" + sponsor + "', " + location_lat + ", " + location_long + ")";
 			Statement statement = con.createStatement();
-			statement.addBatch(insertUser);
-			statement.executeBatch();
+			statement.executeQuery(insertSession);
+			statement.close();
+			
+			String insertClassSession = "INSERT INTO classes_sessions VALUES ('" + session_id + "', '" + class_id + "')";
+			statement = con.createStatement();
+			statement.executeQuery(insertClassSession);
 			statement.close();
 
 		} catch (SQLException ex) {
@@ -206,9 +222,46 @@ public class InsertSession implements RequestHandler<Map<String, Object>, String
 
 		response.put("code", 201);
 		response.put("code_description", "Created");
-		response.put("user_id", user_id);
-		response.put("authentication_key", authentication_key);
+		response.put("session_id", session_id);
+		response.put("class_id", class_id);
 		return response;
 	}
+	
+	public static Connection getRemoteConnection(Context context) {
+		try {
+			Class.forName(System.getenv("JDBC_DRIVER"));
+			String dbName = System.getenv("RDS_DB_NAME");
+			String userName = System.getenv("RDS_USERNAME");
+			String password = System.getenv("RDS_PASSWORD");
+			String hostname = System.getenv("RDS_HOSTNAME");
+			String port = System.getenv("RDS_PORT");
+			String jdbcUrl = "jdbc:mysql://" + hostname + ":" + port + "/" + dbName + "?user=" + userName + "&password="
+					+ password;
+			context.getLogger().log("Before Connection Attempt \n" + jdbcUrl + "\n");
+			Connection con = DriverManager.getConnection(jdbcUrl);
+			if (con == null) {
+				context.getLogger().log("Connection is null");
+			}
+			context.getLogger().log("Success");
+			return con;
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	private boolean sessionIDExists(String session_id, Connection dbcon) throws SQLException
+    {
+		String getSession = "SELECT session_id FROM sessions WHERE session_id='"+session_id+"'";
+		Statement statement = dbcon.createStatement();
+		ResultSet result = statement.executeQuery(getSession);
+		statement.close();
+		if (result.next())
+			return true;
+		else
+			return false;
+    }
 
 }
