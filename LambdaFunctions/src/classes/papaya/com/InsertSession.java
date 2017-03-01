@@ -109,18 +109,46 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 		}
 		
 		//TODO
-		if(!input.containsKey("params") || !((Map<String, Object>) input.get("params")).containsKey("id")) {
-			class_id = (String) ((Map<String, Object>) papaya_json.get("params")).get("id");
+		if(!input.containsKey("params")) {
+			logger.log("input does not contain params");
+			return throw400("input does not contain params.", "");
+		}
+		if(!(input.get("params") instanceof Map)) {
+			logger.log("params is not a map");
+			return throw400("params is not a map.", "");
+		}
+		Map<String, Object> path;
+		if(!((Map<String, Object>) input.get("params")).containsKey("path")) {
+			logger.log("map params does not contain id");
+			return throw400("map params does not contain id.", "");
+		}
+		path = (Map<String, Object>) ((Map<String, Object>) input.get("params")).get("path");
+		if(path == null) {
+			logger.log("map params/path is null");
+			return throw400("map params/path is null.", "");
+		}
+		if(!(path.containsKey("id")) 
+				|| !((class_id = (String) path.get("id")) != null)) {
+			logger.log("id does not exist/is null");
+			return throw400("id does not exist/is null.", "");
+		}
+		/*
+		if(!input.containsKey("params") 
+				|| !(input.get("params") instanceof Map)
+				|| !((Map<String, Object>) input.get("params")).containsKey("path") 
+				|| !((class_id = (String) ((Map<String, Object>) input.get("params")).get("id")) != null)) {
 			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
 			return throw400("params/class_id does not exist.", "");
 		}
-		
+		*/
+		/*
 		if ((!papaya_json.containsKey("class_id") 
 				|| !(papaya_json.get("class_id") instanceof String)
 				|| !((class_id = (String) papaya_json.get("class_id")) != null))) {
 			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
 			return throw400("class_id does not exist.", "");
 		}
+		*/
 		
 		// 2. validate 'service' field is a recognizable type
 		if (service.contentEquals(Authentication.SERVICE_FACEBOOK)) {
