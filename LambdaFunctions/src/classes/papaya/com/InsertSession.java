@@ -132,23 +132,6 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 			logger.log("id does not exist/is null");
 			return throw400("id does not exist/is null.", "");
 		}
-		/*
-		if(!input.containsKey("params") 
-				|| !(input.get("params") instanceof Map)
-				|| !((Map<String, Object>) input.get("params")).containsKey("path") 
-				|| !((class_id = (String) ((Map<String, Object>) input.get("params")).get("id")) != null)) {
-			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return throw400("params/class_id does not exist.", "");
-		}
-		*/
-		/*
-		if ((!papaya_json.containsKey("class_id") 
-				|| !(papaya_json.get("class_id") instanceof String)
-				|| !((class_id = (String) papaya_json.get("class_id")) != null))) {
-			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return throw400("class_id does not exist.", "");
-		}
-		*/
 		
 		// 2. validate 'service' field is a recognizable type
 		if (service.contentEquals(Authentication.SERVICE_FACEBOOK)) {
