@@ -40,6 +40,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 
 		this.context = context;
 		this.logger = context.getLogger();
+		Map<String, Object> papaya_json = (Map<String, Object>) input.get("body-json");
 		Map<String, Object> response = new HashMap<String, Object>();
 		AuthServiceType service_type = AuthServiceType.NONE;
 
@@ -50,7 +51,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 		String session_id, location_desc, description, class_id;
 		String user_id = "";
 		Integer duration;
-		Float location_lat, location_long;
+		Double location_lat, location_long;
 		// Optional request fields:
 		String sponsor = "";
 
@@ -63,57 +64,60 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 		 */
 
 		// Check for required key
-		if ((!input.containsKey("user_id") || !(input.get("user_id") instanceof String)
-				|| !((user_id = (String) input.get("user_id")) != null))
-				|| (!input.containsKey("authentication_key") || !(input.get("authentication_key") instanceof String)
-						|| !((authentication_key = (String) input.get("authentication_key")) != null))
-				|| (!input.containsKey("service") || !(input.get("service") instanceof String)
-						|| !((service = (String) input.get("service")) != null))) {
+		if ((!papaya_json.containsKey("user_id") || !(papaya_json.get("user_id") instanceof String)
+				|| !((user_id = (String) papaya_json.get("user_id")) != null))
+				|| (!papaya_json.containsKey("authentication_key") || !(papaya_json.get("authentication_key") instanceof String)
+						|| !((authentication_key = (String) papaya_json.get("authentication_key")) != null))
+				|| (!papaya_json.containsKey("service") || !(papaya_json.get("service") instanceof String)
+						|| !((service = (String) papaya_json.get("service")) != null))) {
 
 			// TODO: Add "fields" that were actually the problem.
 			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
 			return throw400("user_id or authentication_key or service do not exist.", "");
 		}
-		if (!input.containsKey("duration") 
-				|| !(input.get("duration") instanceof Integer)
-				|| !((duration = (Integer) input.get("duration")) != null)) {
+		if (!papaya_json.containsKey("duration") 
+				|| !(papaya_json.get("duration") instanceof Integer)
+				|| !((duration = (Integer) papaya_json.get("duration")) != null)) {
 			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
 			return throw400("Duration does not exist", "");
 		}
-		if (!input.containsKey("location_lat") 
-				|| !(input.get("location_lat") instanceof Float)
-				|| !((location_lat = (Float) input.get("location_lat")) != null)) {
+		if (!papaya_json.containsKey("location_lat") 
+				|| !(papaya_json.get("location_lat") instanceof Double)
+				|| !((location_lat = (Double) papaya_json.get("location_lat")) != null)) {
+			logger.log("loc_lat: " + papaya_json.get("location_lat").getClass().getName());
 			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
 			return throw400("location_lat does not exist", "");
 		}
-		if (!input.containsKey("location_long") 
-				|| !(input.get("location_long") instanceof Float)
-				|| !((location_long = (Float) input.get("location_long")) != null)) {
+		if (!papaya_json.containsKey("location_long") 
+				|| !(papaya_json.get("location_long") instanceof Double)
+				|| !((location_long = (Double) papaya_json.get("location_long")) != null)) {
 			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
 			return throw400("location_long does not exist.", "");
 		}
-		if ((!input.containsKey("session_id") 
-				|| !(input.get("session_id") instanceof String)
-				|| !((session_id = (String) input.get("session_id")) != null))) {
-			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return throw400("session_id does not exist.", "");
-		}
-		if ((!input.containsKey("location_desc") 
-				|| !(input.get("location_desc") instanceof String)
-				|| !((location_desc = (String) input.get("location_desc")) != null))) {
+		if ((!papaya_json.containsKey("location_desc") 
+				|| !(papaya_json.get("location_desc") instanceof String)
+				|| !((location_desc = (String) papaya_json.get("location_desc")) != null))) {
 			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
 			return throw400("location_desc does not exist.", "");
 		}
 		
-		if ((!input.containsKey("description") 
-				|| !(input.get("description") instanceof String)
-				|| !((description = (String) input.get("description")) != null))) {
+		if ((!papaya_json.containsKey("description") 
+				|| !(papaya_json.get("description") instanceof String)
+				|| !((description = (String) papaya_json.get("description")) != null))) {
 			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
 			return throw400("description does not exist.", "");
 		}
-		if ((!input.containsKey("class_id") 
-				|| !(input.get("class_id") instanceof String)
-				|| !((class_id = (String) input.get("class_id")) != null))) {
+		
+		//TODO
+		if(!input.containsKey("params") || !((Map<String, Object>) input.get("params")).containsKey("id")) {
+			class_id = (String) ((Map<String, Object>) papaya_json.get("params")).get("id");
+			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
+			return throw400("params/class_id does not exist.", "");
+		}
+		
+		if ((!papaya_json.containsKey("class_id") 
+				|| !(papaya_json.get("class_id") instanceof String)
+				|| !((class_id = (String) papaya_json.get("class_id")) != null))) {
 			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
 			return throw400("class_id does not exist.", "");
 		}
@@ -147,9 +151,9 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 
 
 		// 5. validate 'email' is of acceptable format and length if it exists.
-		if (input.containsKey("sponsor") && (input.get("sponsor") instanceof String)) {
+		if (papaya_json.containsKey("sponsor") && (papaya_json.get("sponsor") instanceof String)) {
 
-			sponsor = (String) input.get("sponsor");
+			sponsor = (String) papaya_json.get("sponsor");
 
 			if (sponsor.length() > 45) {
 
@@ -176,7 +180,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 		/*
 		 * ### Generate unique user_id number and validate its uniqueness.
 		 */
-		session_id = UIDGenerator.generateUID(session_id);
+		session_id = UIDGenerator.generateUID(user_id);
 		boolean exists = false;
 		Connection con = getRemoteConnection(context);
 
@@ -192,14 +196,14 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 				return throw500("generateUID() failed 3 times. Try recalling.");
 			}
 
-			String insertSession = "INSERT INTO sessions VALUES ('" + session_id + "', '" + user_id + "', " + duration + ", '" + location_desc + "', '" + description + "', '" + sponsor + "', " + location_lat + ", " + location_long + ")";
+			String insertSession = "INSERT INTO sessions VALUES ('" + session_id + "', '" + user_id + "', " + duration + ", '" + location_desc + "', '" + description + "', '" + sponsor + "', " + location_lat.floatValue() + ", " + location_long.floatValue() + ")";
 			Statement statement = con.createStatement();
-			statement.executeQuery(insertSession);
+			statement.execute(insertSession);
 			statement.close();
 			
 			String insertClassSession = "INSERT INTO classes_sessions VALUES ('" + session_id + "', '" + class_id + "')";
 			statement = con.createStatement();
-			statement.executeQuery(insertClassSession);
+			statement.execute(insertClassSession);
 			statement.close();
 
 		} catch (SQLException ex) {
@@ -257,11 +261,15 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 		String getSession = "SELECT session_id FROM sessions WHERE session_id='"+session_id+"'";
 		Statement statement = dbcon.createStatement();
 		ResultSet result = statement.executeQuery(getSession);
-		statement.close();
-		if (result.next())
+		if (result.next()) {
+			result.close();
+			statement.close();
 			return true;
-		else
-			return false;
+		} else {
+			result.close();
+			statement.close();
+			return false; 
+		}
     }
 
 }
