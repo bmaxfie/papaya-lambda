@@ -18,7 +18,7 @@ import com.amazonaws.util.Md5Utils;
 
 import utils.papaya.com.UIDGenerator;
 
-public class InsertUser implements RequestHandler<Map<String, Object>, Map<String, Object>> {
+public class CreateUser implements RequestHandler<Map<String, Object>, Map<String, Object>> {
 
 	/** Steps to implement a generic papaya API Lambda Function:
 	 * 
