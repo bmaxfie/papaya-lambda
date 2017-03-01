@@ -53,6 +53,7 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 		 * 			user_id
 		 * 			authentication_key
 		 * 			service
+		 * 			access_key
 		 * 
 		 * 		// TODO: Check for SQL INJECTION!
 		 */
@@ -74,12 +75,12 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 			
 			// TODO: Add "fields" that were actually the problem.
 	    	logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return throw400("username or authentication_key or service do not exist.", "");
+			return throw400("user_id or authentication_key or service or access_key do not exist.", "");
 		}
 		
 		// Check for proper formatting of supplied elements. Check by field.
 		
-		// 1. validate 'username' field is of length allowed in database, otherwise truncate.
+		// 1. validate 'user_id' field is of length allowed in database, otherwise truncate.
 		if (user_id.length() > 45)
 			user_id = user_id.substring(0, 45);
 		
@@ -120,21 +121,18 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 		 * 		1. Check if 
 		 */
 		
-		/*
-		 * ### Generate unique user_id number and validate its uniqueness.
-		 */
-		boolean exists = false;
 		Connection con = getRemoteConnection(context);
 		
 		try {
 			Statement statement = con.createStatement();
 			
-			//get the class_id
+			//get the class_id from database
 			String get_class_id = "SELECT class_id FROM classes WHERE student_access_key='" + access_key + "' OR ta_access_key='" + access_key + "' OR professor_access_key='" + access_key +"'";
 			ResultSet class_id_rs = statement.executeQuery(get_class_id);
 			String class_id = "";
 			if (class_id_rs.next()) {
-				 class_id = class_id_rs.getString("class_id");
+				//if it is returned from the databse, it should be formatted correctly and not null
+				class_id = class_id_rs.getString("class_id");
 			}
 			else {
 				logger.log("ERROR: 400 Bad Request - Returned to client. class_id does not exist or is invalid.");
