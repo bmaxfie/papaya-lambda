@@ -163,7 +163,7 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 			String joinClass = "INSERT INTO users_classes VALUES (" + user_role + ", '"
 					+ user_id + "', '" + class_id + "')";
 			
-			statement.executeQuery(joinClass);
+			statement.execute(joinClass);
 			statement.executeBatch();
 			statement.close();
 
@@ -223,11 +223,15 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 		String getUser = "SELECT user_id FROM users WHERE user_id='"+user_id+"'";
 		Statement statement = dbcon.createStatement();
 		ResultSet result = statement.executeQuery(getUser);
-		statement.close();
-		if (result.next())
+		if (result.next()) {
+			result.close();
+			statement.close();
 			return true;
-		else
-			return false;
+		} else {
+			result.close();
+			statement.close();
+			return false; 
+		}
     }
     
 }

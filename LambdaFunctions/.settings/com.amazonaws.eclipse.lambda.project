@@ -1,7 +1,7 @@
 #Lambda Function Project Metadata
-#Wed Mar 01 21:24:17 EST 2017
-lastInvokeShowLiveLog=false
+#Wed Mar 01 22:22:58 EST 2017
+lastInvokeShowLiveLog=true
 lastDeploymentFunctionName=JoinClass
 lastDeploymentBucketName=papaya-lambda
 lastDeploymentEndpoint=https\://lambda.us-west-2.amazonaws.com/
-lastInvokeInput={\n  "user_id"\: "141439293",\n  "authentication_key"\: "11941292383",\n  "access_key"\: "blablabla"\n}
+lastInvokeInput={\n \t"user_id"\: "2DAkfVbjng9Nblya+CqEoQ\=\=",\n \t"authentication_key"\: "123456789012345678901234567890123456789012345",\n\t"service" \: "FACEBOOK",\n \t"access_key"\: "1231"\n}
