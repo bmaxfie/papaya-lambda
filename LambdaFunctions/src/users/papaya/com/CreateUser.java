@@ -76,7 +76,7 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 			
 			// TODO: Add "fields" that were actually the problem.
 	    	logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return throw400("username or authentication_key or service do not exist.", papaya_json.keySet().toString());
+			return generate400("username or authentication_key or service do not exist.", papaya_json.keySet().toString());
 		}
 		
 		// Check for proper formatting of supplied elements. Check by field.
@@ -92,7 +92,7 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 			service_type = AuthServiceType.GOOGLE;
 		} else {
 			logger.log("ERROR: 400 Bad Request - Returned to client. Service was of an unrecognizable type '" + service + "'.");
-			return throw400("service was of an unrecognizable type '" + service + "'.", "service");
+			return generate400("service was of an unrecognizable type '" + service + "'.", "service");
 		}
 				
 		// 2. validate 'authentication_key' is of length allowed?
@@ -104,7 +104,7 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 						&& (authentication_key.length() > Authentication.GOOGLE_KEY_MAX_LEN
 								|| authentication_key.length() < Authentication.GOOGLE_KEY_MIN_LEN)) {
 			logger.log("ERROR: 400 Bad Request - Returned to client. authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.");
-			return throw400("authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.", "authentication_key");
+			return generate400("authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.", "authentication_key");
 		}
 		
 		
@@ -126,7 +126,7 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 						&& phone < 10000000000l)) {
 				
 				logger.log("ERROR: 400 Bad Request - Returned to client. phone was not formatted right (i.e. neither 7 or 10 digits long).");
-				return throw400("phone was not formatted right (i.e. neither 7 or 10 digits long): " + phone + ".", "phone");
+				return generate400("phone was not formatted right (i.e. neither 7 or 10 digits long): " + phone + ".", "phone");
 			}
 		}
 		
@@ -141,7 +141,7 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 					|| !email.matches(".{3,}@.{3,}\\..{2,}")) {
 				
 				logger.log("ERROR: 400 Bad Request - Returned to client. email was not formatted right (i.e. length or no @ or no domain) '" + email + "'.");
-				return throw400("email was not formatted right (i.e. length or no @ or no domain) '" + email + "'.", "email");
+				return generate400("email was not formatted right (i.e. length or no @ or no domain) '" + email + "'.", "email");
 			}
 		}
 		
@@ -173,7 +173,7 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 			}
 			if (exists) {
 				logger.log("ERROR: 500 Internal Server Error - Returned to client. Could not generate a UID on 3 tries.");
-				return throw500("generateUID() failed 3 times. Try recalling.");
+				return generate500("generateUID() failed 3 times. Try recalling.");
 			}
 			
 			String insertUser = "INSERT INTO users VALUES ('" + user_id + "', '"
@@ -190,7 +190,7 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 			logger.log("SQLState: " + ex.getSQLState());
 			logger.log("VendorError: " + ex.getErrorCode());
 
-			return throw500(ex.getMessage());
+			return generate500(ex.getMessage());
 			
 		} finally {
 			context.getLogger().log("Closing the connection.");
@@ -198,7 +198,7 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 				try {
 					con.close();
 				} catch (SQLException ignore) {
-					return throw500("SQL error.");
+					return generate500("SQL error.");
 				}
 		}
 		

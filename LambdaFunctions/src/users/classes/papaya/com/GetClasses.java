@@ -1,7 +1,6 @@
-package classes.sessions.papaya.com;
+package users.classes.papaya.com;
 
 import static utils.papaya.com.ResponseGenerator.generate400;
-import static utils.papaya.com.ResponseGenerator.generate404;
 import static utils.papaya.com.ResponseGenerator.generate500;
 
 import java.sql.Connection;
@@ -20,7 +19,7 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import utils.papaya.com.AuthServiceType;
 import utils.papaya.com.Authentication;
 
-public class RetrieveClassSessions implements RequestHandler <Map<String, Object>, Map<String, Object>>{
+public class GetClasses implements RequestHandler<Map<String, Object>, Map<String, Object>>{
 
 	/** Steps to implement a generic papaya API Lambda Function:
 	 * 
@@ -41,8 +40,7 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 		
 		this.context = context;
 		this.logger = context.getLogger();
-		@SuppressWarnings("unchecked")
-		Map<String, Object> papaya_json = (Map<String, Object>) input.get("body-json");
+		Map<String, Object> papaya_json;
 		Map<String, Object> response = new HashMap<String, Object>();
 		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required request fields:
@@ -51,18 +49,31 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 		/*
 		 * 1. Check request body (validate) for proper format of fields:
 		 * 		
-		 * 		fields must exist:
+		 * 		fields must exist in string URL parameters:
 		 * 			user_id
 		 * 			authentication_key
 		 * 			service
-		 * 		
-		 * 		field from path, class_id from class/{id}/sessions
 		 * 
 		 * 		// TODO: Check for SQL INJECTION!
 		 */
 		
+		// Get path to querystrings
+		if (!input.containsKey("params")
+						|| !(input.get("params") instanceof Map)
+						|| !((papaya_json = (Map<String, Object>) input.get("params")) != null)
+				|| !papaya_json.containsKey("querystring")
+						|| !(papaya_json.get("querystring") instanceof Map)
+						|| !((papaya_json = (Map<String, Object>) papaya_json.get("querystring")) != null)) {
+			
+			logger.log("ERROR: 400 Bad Request - Returned to client. Required path to querystring did not exist or are empty.");
+			return generate400("path to querystring does not exist.", "params or querystring");
+		}
+		
 		// Check for required keys.
-		if ((!papaya_json.containsKey("authentication_key") 
+		if (!papaya_json.containsKey("user_id")
+						|| !(papaya_json.get("user_id") instanceof String)
+						|| !((user_id = (String) papaya_json.get("user_id")) != null)
+				|| (!papaya_json.containsKey("authentication_key") 
 						|| !(papaya_json.get("authentication_key") instanceof String)
 						|| !((authentication_key = (String) papaya_json.get("authentication_key")) != null))
 				|| (!papaya_json.containsKey("service"))
@@ -71,21 +82,14 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 			
 			// TODO: Add "fields" that were actually the problem.
 	    	logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return generate400("username or authentication_key or service do not exist.", "");
+			return generate400("user_id or authentication_key or service do not exist.", "");
 		}
 		
 		// Check for proper formatting of supplied elements. Check by field.
 		//		auth_option has already been verified.
 		
 		// 1. validate 'user_id'
-		if (!papaya_json.containsKey("user_id")
-					|| !(papaya_json.get("user_id") instanceof String)
-					|| !((user_id = (String) papaya_json.get("user_id")) != null)) {
-			
-			logger.log("ERROR: 400 Bad Request - Returned to client. Required user_id doesn't exist despite given auth_option value.");
-			return generate400("user_id does not exist.", "user_id");
-			
-		} else if (user_id.length() > 45) {
+		if (user_id.length() > 45) {
 			user_id = user_id.substring(0, 45);
 		}
 		
@@ -111,10 +115,6 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 			return generate400("authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.", "authentication_key");
 		}
 		
-		// 4. validate the path parameter 'class_id'
-		
-		
-		
 		/*
 		 * 2. Authentic authentication_key check:
 		 * 
@@ -133,15 +133,15 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 			 */
 			
 			// TODO: Accidentally made class retriever instead of session retriever.
-			String setauth = "SELECT class_session_id FROM classes_sessions WHERE session_class_id='"+class_id+"' AND active="+1+"";
+			String getclasses = "SELECT user_class_id FROM users_classes WHERE class_user_id='"+user_id+"'";
 			Statement statement = con.createStatement();
-			ResultSet result = statement.executeQuery(setauth);
+			ResultSet result = statement.executeQuery(getclasses);
 			
 			ArrayList<String> class_ids = new ArrayList<String>();
 			while (result.next()) {
-				class_ids.add(result.getString(0));
+				class_ids.add(result.getString(1));
 			}
-			response.put("class_ids", class_ids);
+			response.put("class_ids", class_ids.toArray());
 			
 			result.close();
 			statement.close();
@@ -195,5 +195,5 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 		}
 		return null;
 	}
-    	
+	
 }
