@@ -1,7 +1,7 @@
 #Lambda Function Project Metadata
-#Mon Feb 20 01:39:28 EST 2017
+#Wed Mar 01 21:24:17 EST 2017
 lastInvokeShowLiveLog=false
-lastDeploymentFunctionName=InsertUser
+lastDeploymentFunctionName=JoinClass
 lastDeploymentBucketName=papaya-lambda
 lastDeploymentEndpoint=https\://lambda.us-west-2.amazonaws.com/
-lastInvokeInput={\r\n  "user_id"\: "1",\r\n  "username"\: "TestUser",\r\n  "email"\: "john@apple.com",\r\n  "phone"\: "3214534343",\r\n  "authentication_key"\: "142",\r\n  "current_session_id"\: "105"\r\r\n\r\n}
+lastInvokeInput={\n  "user_id"\: "141439293",\n  "authentication_key"\: "11941292383",\n  "access_key"\: "blablabla"\n}
