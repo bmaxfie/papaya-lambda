@@ -38,6 +38,8 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 		
 		this.context = context;
 		this.logger = context.getLogger();
+		@SuppressWarnings("unchecked")
+		Map<String, Object> papaya_json = (Map<String, Object>) input.get("body-json");
 		Map<String, Object> response = new HashMap<String, Object>();
 		AuthServiceType service_type = AuthServiceType.NONE;
 		String user_id = "";
@@ -60,20 +62,21 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 		 * 		// TODO: Check for SQL INJECTION!
 		 */
 		
+		
 		// Check for required keys.
-		if ( (!input.containsKey("username") 
-						|| !(input.get("username") instanceof String)
-						|| !((username = (String) input.get("username")) != null))
-				|| (!input.containsKey("authentication_key") 
-						|| !(input.get("authentication_key") instanceof String)
-						|| !((authentication_key = (String) input.get("authentication_key")) != null))
-				|| (!input.containsKey("service") 
-						|| !(input.get("service") instanceof String)
-						|| !((service = (String) input.get("service")) != null)) ) {
+		if ( (!papaya_json.containsKey("username") 
+						|| !(papaya_json.get("username") instanceof String)
+						|| !((username = (String) papaya_json.get("username")) != null))
+				|| (!papaya_json.containsKey("authentication_key") 
+						|| !(papaya_json.get("authentication_key") instanceof String)
+						|| !((authentication_key = (String) papaya_json.get("authentication_key")) != null))
+				|| (!papaya_json.containsKey("service") 
+						|| !(papaya_json.get("service") instanceof String)
+						|| !((service = (String) papaya_json.get("service")) != null)) ) {
 			
 			// TODO: Add "fields" that were actually the problem.
 	    	logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return throw400("username or authentication_key or service do not exist.", "");
+			return throw400("username or authentication_key or service do not exist.", papaya_json.keySet().toString());
 		}
 		
 		// Check for proper formatting of supplied elements. Check by field.
@@ -106,11 +109,13 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 		
 		
 		// 4. validate 'phone' is of acceptable length and format if it exists.
-		if (input.containsKey("phone")
-				&& (input.get("phone") instanceof Integer)) {
+		if (papaya_json.containsKey("phone")) {
 			
-			// phone exists, now check if it is of proper format.
-			phone = ((Long) input.get("phone")).longValue();
+			// phone exists, now check if it is of proper format and class type.
+			if (papaya_json.get("phone") instanceof Long)
+				phone = ((Long) papaya_json.get("phone")).longValue();
+			if (papaya_json.get("phone") instanceof Integer)
+				phone = ((Integer) papaya_json.get("phone")).longValue();
 			
 			if (// phone is 7 digits
 					!(phone > 999999l
@@ -121,15 +126,15 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 						&& phone < 10000000000l)) {
 				
 				logger.log("ERROR: 400 Bad Request - Returned to client. phone was not formatted right (i.e. neither 7 or 10 digits long).");
-				return throw400("phone was not formatted right (i.e. neither 7 or 10 digits long) '" + phone + "'.", "phone");
+				return throw400("phone was not formatted right (i.e. neither 7 or 10 digits long): " + phone + ".", "phone");
 			}
 		}
 		
 		// 5. validate 'email' is of acceptable format and length if it exists.
-		if (input.containsKey("email")
-				&& (input.get("email") instanceof String)) {
+		if (papaya_json.containsKey("email")
+				&& (papaya_json.get("email") instanceof String)) {
 			
-			email = (String) input.get("email");
+			email = (String) papaya_json.get("email");
 			
 			if (email.length() > 45
 					// Regex is supposed to loosely match general email form.
@@ -173,8 +178,7 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 			
 			String insertUser = "INSERT INTO users VALUES ('" + user_id + "', '"
 					+ username + "', " + phone + ", " + "'"
-					+ email + "', '" + authentication_key + "', '"
-					+ "" + "')";
+					+ email + "', '" + authentication_key + "', '" + "')";
 			Statement statement = con.createStatement();
 			statement.addBatch(insertUser);
 			statement.executeBatch();
@@ -186,7 +190,7 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 			logger.log("SQLState: " + ex.getSQLState());
 			logger.log("VendorError: " + ex.getErrorCode());
 
-			return throw500("SQL error.");
+			return throw500(ex.getMessage());
 			
 		} finally {
 			context.getLogger().log("Closing the connection.");
@@ -236,11 +240,16 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 		String getUser = "SELECT user_id FROM users WHERE user_id='"+user_id+"'";
 		Statement statement = dbcon.createStatement();
 		ResultSet result = statement.executeQuery(getUser);
-		statement.close();
-		if (result.next())
+		if (result.next()) {
+			result.close();
+			statement.close();
 			return true;
-		else
+		}
+		else {
+			result.close();
+			statement.close();
 			return false;
+		}
     }
     
 }

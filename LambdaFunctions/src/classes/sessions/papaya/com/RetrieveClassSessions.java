@@ -1,4 +1,8 @@
-package users.papaya.com;
+package classes.sessions.papaya.com;
+
+import static utils.papaya.com.ResponseGenerator.throw400;
+import static utils.papaya.com.ResponseGenerator.throw404;
+import static utils.papaya.com.ResponseGenerator.throw500;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -14,9 +18,8 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 
 import utils.papaya.com.AuthServiceType;
 import utils.papaya.com.Authentication;
-import static utils.papaya.com.ResponseGenerator.*;
 
-public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<String, Object>> {
+public class RetrieveClassSessions implements RequestHandler <Map<String, Object>, Map<String, Object>>{
 
 	/** Steps to implement a generic papaya API Lambda Function:
 	 * 
@@ -43,27 +46,23 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required request fields:
 		Integer auth_option;
-		String user_id = "", username = "", email = "", authentication_key = "", service = "";
+		String user_id = "", username = "", email = "", authentication_key = "", service = "", class_id = "";
 		
 		/*
 		 * 1. Check request body (validate) for proper format of fields:
 		 * 		
 		 * 		fields must exist:
-		 * 			auth_option
-		 * 				either:	user_id
-		 * 				or:		username
-		 * 						email
+		 * 			user_id
 		 * 			authentication_key
 		 * 			service
+		 * 		
+		 * 		field from path, class_id from class/{id}/sessions
 		 * 
 		 * 		// TODO: Check for SQL INJECTION!
 		 */
 		
 		// Check for required keys.
-		if ( (!papaya_json.containsKey("auth_option") 
-						|| !(papaya_json.get("auth_option") instanceof Integer)
-						|| !((auth_option = (Integer) papaya_json.get("auth_option")) != null))
-				|| (!papaya_json.containsKey("authentication_key") 
+		if ((!papaya_json.containsKey("authentication_key") 
 						|| !(papaya_json.get("authentication_key") instanceof String)
 						|| !((authentication_key = (String) papaya_json.get("authentication_key")) != null))
 				|| (!papaya_json.containsKey("service"))
@@ -72,51 +71,22 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 			
 			// TODO: Add "fields" that were actually the problem.
 	    	logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return throw400("auth_option or authentication_key or service do not exist.", "");
-		}
-		
-		// Check for more required keys:
-		// If 1, user_id is defined
-		if (auth_option.intValue() == 1) {
-			if (!papaya_json.containsKey("user_id")
-						|| !(papaya_json.get("user_id") instanceof String)
-						|| !((user_id = (String) papaya_json.get("user_id")) != null)) {
-				logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-				return throw400("user_id does not exist.", "user_id");
-			}
-		} // If 2, username & email are defined
-		else if (auth_option.intValue() == 2) {
-			if (!papaya_json.containsKey("username")
-						|| !(papaya_json.get("username") instanceof String)
-						|| !((username = (String) papaya_json.get("username")) != null)
-				|| !papaya_json.containsKey("email")
-						|| !(papaya_json.get("email") instanceof String)
-						|| !((username = (String) papaya_json.get("email")) != null)) {
-				
-				logger.log("ERROR: 400 Bad Request - Returned to client. Required fields (username or email) did not exist or are empty.");
-				return throw400("username or email does not exist.", "username, email");
-			}
-		}
-		else {
-			logger.log("ERROR: 400 Bad Request - Returned to client. Required auth_option to be of a set range of values.");
-			return throw400("auth_option was not of a value in the range acceptable.", "auth_option");
+			return throw400("username or authentication_key or service do not exist.", "");
 		}
 		
 		// Check for proper formatting of supplied elements. Check by field.
 		//		auth_option has already been verified.
 		
-		// 1. validate 'user_id' if auth_option == 1.
-		if (auth_option.intValue() == 1) {
-			if (!papaya_json.containsKey("user_id")
-						|| !(papaya_json.get("user_id") instanceof String)
-						|| !((user_id = (String) papaya_json.get("user_id")) != null)) {
-				
-				logger.log("ERROR: 400 Bad Request - Returned to client. Required user_id doesn't exist despite given auth_option value.");
-				return throw400("user_id does not exist.", "user_id");
-				
-			} else if (user_id.length() > 45) {
-				user_id = user_id.substring(0, 45);
-			}
+		// 1. validate 'user_id'
+		if (!papaya_json.containsKey("user_id")
+					|| !(papaya_json.get("user_id") instanceof String)
+					|| !((user_id = (String) papaya_json.get("user_id")) != null)) {
+			
+			logger.log("ERROR: 400 Bad Request - Returned to client. Required user_id doesn't exist despite given auth_option value.");
+			return throw400("user_id does not exist.", "user_id");
+			
+		} else if (user_id.length() > 45) {
+			user_id = user_id.substring(0, 45);
 		}
 		
 		// 2. validate 'service' field is a recognizable type
@@ -128,37 +98,8 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 			logger.log("ERROR: 400 Bad Request - Returned to client. Service was of an unrecognizable type '" + service + "'.");
 			return throw400("service was of an unrecognizable type '" + service + "'.", "service");
 		}
-		
-		// 3. validate 'username' field if auth_option == 2. Check if field is of length allowed in database, otherwise truncate.
-		if (auth_option.intValue() == 2) {
-			if (!papaya_json.containsKey("username")
-						|| !(papaya_json.get("username") instanceof String)
-						|| !((username = (String) papaya_json.get("username")) != null)) {
 				
-				logger.log("ERROR: 400 Bad Request - Returned to client. Required username doesn't exist despite given auth_option value.");
-				return throw400("username does not exist.", "username");
-				
-			} else if (username.length() > 45) {
-				username = username.substring(0, 45);
-			}
-		}
-		
-		// 4. validate 'email' field if auth_option == 2. Check if field is of acceptable format and length.
-		if (auth_option.intValue() == 2 && papaya_json.containsKey("email")
-				&& (papaya_json.get("email") instanceof String)) {
-			
-			email = (String) papaya_json.get("email");
-			
-			if (email.length() > 45
-					// Regex is supposed to loosely match general email form.
-					|| !email.matches(".{3,}@.{3,}\\..{2,}")) {
-				
-				logger.log("ERROR: 400 Bad Request - Returned to client. email was not formatted right (i.e. length or no @ or no domain) '" + email + "'.");
-				return throw400("email was not formatted right (i.e. length or no @ or no domain) '" + email + "'.", "email");
-			}
-		}
-				
-		// 5. validate 'authentication_key' is of length allowed?
+		// 3. validate 'authentication_key' is of length allowed?
 		// TODO: Determine more strict intro rules
 		if (service_type == AuthServiceType.FACEBOOK 
 						&& (authentication_key.length() > Authentication.FACEBOOK_KEY_MAX_LEN
@@ -169,6 +110,9 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 			logger.log("ERROR: 400 Bad Request - Returned to client. authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.");
 			return throw400("authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.", "authentication_key");
 		}
+		
+		// 4. validate the path parameter 'class_id'
+		
 		
 		
 		/*
@@ -187,27 +131,7 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 			 * 
 			 * 		1. Get user_id if not supplied from API call.
 			 */
-			if (auth_option.intValue() == 2) {
-				String getuser_id = "SELECT user_id FROM users WHERE username='"+username+"' AND email='"+email+"'";
-				Statement statement = con.createStatement();
-				ResultSet result = statement.executeQuery(getuser_id);
-				if (!result.next()) {
-					result.close();
-					statement.close();
-					logger.log("ERROR: 404 Not Found - Returned to client. No user could be found with the username and email given.");
-					return throw404("No user could be found with the username and email given.");
-				}
-				if (!result.isLast()) {
-					result.close();
-					statement.close();
-					logger.log("ERROR: 500 Internal Server Error - Returned to client. More than one user was returned for username and email.");
-					return throw500("More than one user was returned for username and client.");
-				}
-				
-				user_id = result.getString(0);
-				result.close();
-				statement.close();
-			}
+			
 			
 			/*
 			 * 3b. Change tables as necessary for particular request.
@@ -215,9 +139,11 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 			 * 		1. Update authentication_key for user_id.
 			 */
 			
-			String setauth = "UPDATE users SET authentication_key='"+authentication_key+"' WHERE user_id='"+user_id+"'";
+			String setauth = "SELECT class_session_id FROM classes_sessions WHERE session_class_id='"+class_id+"'";
 			Statement statement = con.createStatement();
-			statement.executeUpdate(setauth);
+			ResultSet result = statement.executeQuery(setauth);
+			
+			result.close();
 			statement.close();
 
 		} catch (SQLException ex) {
@@ -226,7 +152,7 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 			logger.log("SQLState: " + ex.getSQLState());
 			logger.log("VendorError: " + ex.getErrorCode());
 
-			return throw500(ex.getMessage());
+			return throw500("SQL error.");
 			
 		} finally {
 			context.getLogger().log("Closing the connection.");
@@ -234,7 +160,7 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 				try {
 					con.close();
 				} catch (SQLException ignore) {
-					return throw500(ignore.getMessage());
+					return throw500("SQL error.");
 				}
 		}
 		
@@ -270,4 +196,36 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 		return null;
 	}
     
+    
+    private boolean userIDExists(String user_id, Connection dbcon)
+    {
+    	try {
+			String getUser = "SELECT user_id from users where user_id='"+user_id+"'";
+			Statement statement = dbcon.createStatement();
+			ResultSet result = statement.executeQuery(getUser);
+			statement.close();
+			if (result.next())
+				return true;
+			else
+				return false;
+
+		} catch (SQLException ex) {
+			// handle any errors
+			logger.log("SQLException: " + ex.getMessage());
+			logger.log("SQLState: " + ex.getSQLState());
+			logger.log("VendorError: " + ex.getErrorCode());
+
+			return false;
+			
+		} finally {
+			context.getLogger().log("Closing the connection.");
+			if (dbcon != null)
+				try {
+					dbcon.close();
+				} catch (SQLException ignore) {
+					logger.log("SQL Error: Problem closing connection.");
+				}
+		}
+    }
+	
 }
