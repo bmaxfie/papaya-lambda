@@ -173,7 +173,7 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 			logger.log("SQLState: " + ex.getSQLState());
 			logger.log("VendorError: " + ex.getErrorCode());
 
-			return throw500("SQL error.");
+			return throw500(ex.getMessage());
 			
 		} finally {
 			context.getLogger().log("Closing the connection.");
@@ -181,7 +181,7 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 				try {
 					con.close();
 				} catch (SQLException ignore) {
-					return throw500("SQL error.");
+					return throw500(ignore.getMessage());
 				}
 		}
 		
@@ -216,22 +216,5 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 		}
 		return null;
 	}
-    
-    
-    private boolean userIDExists(String user_id, Connection dbcon) throws SQLException
-    {
-		String getUser = "SELECT user_id FROM users WHERE user_id='"+user_id+"'";
-		Statement statement = dbcon.createStatement();
-		ResultSet result = statement.executeQuery(getUser);
-		if (result.next()) {
-			result.close();
-			statement.close();
-			return true;
-		} else {
-			result.close();
-			statement.close();
-			return false; 
-		}
-    }
     
 }

@@ -45,8 +45,7 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 		Map<String, Object> response = new HashMap<String, Object>();
 		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required request fields:
-		Integer auth_option;
-		String user_id = "", username = "", email = "", authentication_key = "", service = "", class_id = "";
+		String user_id = "", authentication_key = "", service = "", class_id = "";
 		
 		/*
 		 * 1. Check request body (validate) for proper format of fields:

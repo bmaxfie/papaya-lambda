@@ -1,4 +1,4 @@
-package classes.papaya.com;
+package classes.sessions.papaya.com;
 
 import static utils.papaya.com.ResponseGenerator.throw400;
 import static utils.papaya.com.ResponseGenerator.throw500;
@@ -35,6 +35,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 	private Context context;
 	private LambdaLogger logger;
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public Map<String, Object> handleRequest(Map<String, Object> input, Context context) {
 
@@ -107,27 +108,22 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
 			return throw400("description does not exist.", "");
 		}
-		
-		//TODO
-		if(!input.containsKey("params")) {
-			logger.log("input does not contain params");
-			return throw400("input does not contain params.", "");
-		}
-		if(!(input.get("params") instanceof Map)) {
-			logger.log("params is not a map");
-			return throw400("params is not a map.", "");
-		}
+
 		Map<String, Object> path;
-		if(!((Map<String, Object>) input.get("params")).containsKey("path")) {
-			logger.log("map params does not contain id");
-			return throw400("map params does not contain id.", "");
+		if(!input.containsKey("params")
+				|| !(input.get("params") instanceof Map)
+				|| !((path = (Map<String, Object>) input.get("params")) != null)) {
+			logger.log("Could not access params field of AWS transformed JSON.");
+			return throw400("params field, when looking for the class_id is not in AWS transformed JSON.", "class_id");
 		}
-		path = (Map<String, Object>) ((Map<String, Object>) input.get("params")).get("path");
-		if(path == null) {
-			logger.log("map params/path is null");
-			return throw400("map params/path is null.", "");
+		if(!(path.containsKey("path"))
+				|| !(path.get("path") instanceof Map)
+				|| !((path = (Map<String, Object>) input.get("path")) != null)) {
+			logger.log("Could not access path field of AWS ransformed JSON.");
+			return throw400("path field, when looking for the class_id is not in AWS transformed JSON.", "class_id");
 		}
 		if(!(path.containsKey("id")) 
+				|| !(path.get("id") instanceof String)
 				|| !((class_id = (String) path.get("id")) != null)) {
 			logger.log("id does not exist/is null");
 			return throw400("id does not exist/is null.", "");
@@ -161,18 +157,13 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 		}
 
 
-		// 5. validate 'email' is of acceptable format and length if it exists.
-		if (papaya_json.containsKey("sponsor") && (papaya_json.get("sponsor") instanceof String)) {
-
-			sponsor = (String) papaya_json.get("sponsor");
-
+		// 5. validate 'sponsor' is of acceptable format and length if it exists.
+		if (papaya_json.containsKey("sponsor") 
+				&& (papaya_json.get("sponsor") instanceof String)
+				&& (sponsor = (String) papaya_json.get("sponsor")) != null) {
+			
 			if (sponsor.length() > 45) {
-
-				logger.log(
-						"ERROR: 400 Bad Request - Returned to client. email was not formatted right (i.e. length or no @ or no domain) '"
-								+ sponsor + "'.");
-				return throw400("sponsor was not formatted right (length > 45) '" + sponsor + "'.",
-						"sponsor");
+				sponsor = sponsor.substring(0, 45);
 			}
 		}
 
@@ -207,7 +198,10 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 				return throw500("generateUID() failed 3 times. Try recalling.");
 			}
 
-			String insertSession = "INSERT INTO sessions VALUES ('" + session_id + "', '" + user_id + "', " + duration + ", '" + location_desc + "', '" + description + "', '" + sponsor + "', " + location_lat.floatValue() + ", " + location_long.floatValue() + ")";
+			String insertSession = "INSERT INTO sessions VALUES ('" + session_id + "', '" 
+						+ user_id + "', " + duration + ", '" + location_desc + "', '" 
+						+ description + "', '" + sponsor + "', " + location_lat.floatValue() 
+						+ ", " + location_long.floatValue() + ")";
 			Statement statement = con.createStatement();
 			statement.execute(insertSession);
 			statement.close();
@@ -223,7 +217,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 			logger.log("SQLState: " + ex.getSQLState());
 			logger.log("VendorError: " + ex.getErrorCode());
 
-			return throw500("SQL error.");
+			return throw500(ex.getMessage());
 
 		} finally {
 			context.getLogger().log("Closing the connection.");
@@ -231,7 +225,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 				try {
 					con.close();
 				} catch (SQLException ignore) {
-					return throw500("SQL error.");
+					return throw500(ignore.getMessage());
 				}
 		}
 
