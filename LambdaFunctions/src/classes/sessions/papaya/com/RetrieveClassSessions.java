@@ -9,6 +9,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -131,9 +132,15 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 			 * 		1. Update authentication_key for user_id.
 			 */
 			
-			String setauth = "SELECT class_session_id FROM classes_sessions WHERE session_class_id='"+class_id+"'";
+			String setauth = "SELECT class_session_id FROM classes_sessions WHERE session_class_id='"+class_id+"' AND active="+1+"";
 			Statement statement = con.createStatement();
 			ResultSet result = statement.executeQuery(setauth);
+			
+			ArrayList<String> class_ids = new ArrayList<String>();
+			while (result.next()) {
+				class_ids.add(result.getInt("active"));
+			}
+			response.put("class_ids", class_ids);
 			
 			result.close();
 			statement.close();
