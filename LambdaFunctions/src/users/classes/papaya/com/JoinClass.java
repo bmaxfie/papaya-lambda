@@ -30,6 +30,7 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 	 * 	For description of the API requirements, seek the API Documentation in developers folder.
 	 */
 
+	// TODO: MAKE SURE WE DON'T REJOIN THE SAME CLASS WE'RE ALREADY IN (JOIN 2+ TIMES).
 	
 	private Context context;
 	private LambdaLogger logger;
@@ -39,6 +40,8 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 		
 		this.context = context;
 		this.logger = context.getLogger();
+		@SuppressWarnings("unchecked")
+		Map<String, Object> papaya_json = (Map<String, Object>) input.get("body-json");
 		Map<String, Object> response = new HashMap<String, Object>();
 		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required request fields:
@@ -59,18 +62,18 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 		 */
 		
 		// Check for required keys.
-		if ( (!input.containsKey("user_id") 
-						|| !(input.get("user_id") instanceof String)
-						|| !((user_id = (String) input.get("user_id")) != null))
-				|| (!input.containsKey("authentication_key") 
-						|| !(input.get("authentication_key") instanceof String)
-						|| !((authentication_key = (String) input.get("authentication_key")) != null))
-				|| (!input.containsKey("service") 
-						|| !(input.get("service") instanceof String)
-						|| !((service = (String) input.get("service")) != null)) 
-				|| (!input.containsKey("access_key") 
-						|| !(input.get("access_key") instanceof String)
-						|| !((access_key = (String) input.get("access_key")) != null)) 
+		if ( (!papaya_json.containsKey("user_id") 
+						|| !(papaya_json.get("user_id") instanceof String)
+						|| !((user_id = (String) papaya_json.get("user_id")) != null))
+				|| (!papaya_json.containsKey("authentication_key") 
+						|| !(papaya_json.get("authentication_key") instanceof String)
+						|| !((authentication_key = (String) papaya_json.get("authentication_key")) != null))
+				|| (!papaya_json.containsKey("service") 
+						|| !(papaya_json.get("service") instanceof String)
+						|| !((service = (String) papaya_json.get("service")) != null)) 
+				|| (!papaya_json.containsKey("access_key") 
+						|| !(papaya_json.get("access_key") instanceof String)
+						|| !((access_key = (String) papaya_json.get("access_key")) != null)) 
 			) {
 			
 			// TODO: Add "fields" that were actually the problem.
