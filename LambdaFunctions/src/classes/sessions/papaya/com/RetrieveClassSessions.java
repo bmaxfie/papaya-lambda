@@ -127,13 +127,6 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 		try {
 			
 			/*
-			 * 3a. Get any data from tables to complete request.
-			 * 
-			 * 		1. Get user_id if not supplied from API call.
-			 */
-			
-			
-			/*
 			 * 3b. Change tables as necessary for particular request.
 			 * 
 			 * 		1. Update authentication_key for user_id.
@@ -152,7 +145,7 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 			logger.log("SQLState: " + ex.getSQLState());
 			logger.log("VendorError: " + ex.getErrorCode());
 
-			return throw500("SQL error.");
+			return throw500(ex.getMessage());
 			
 		} finally {
 			context.getLogger().log("Closing the connection.");
@@ -160,7 +153,7 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 				try {
 					con.close();
 				} catch (SQLException ignore) {
-					return throw500("SQL error.");
+					return throw500(ignore.getMessage());
 				}
 		}
 		
@@ -195,37 +188,5 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 		}
 		return null;
 	}
-    
-    
-    private boolean userIDExists(String user_id, Connection dbcon)
-    {
-    	try {
-			String getUser = "SELECT user_id from users where user_id='"+user_id+"'";
-			Statement statement = dbcon.createStatement();
-			ResultSet result = statement.executeQuery(getUser);
-			statement.close();
-			if (result.next())
-				return true;
-			else
-				return false;
-
-		} catch (SQLException ex) {
-			// handle any errors
-			logger.log("SQLException: " + ex.getMessage());
-			logger.log("SQLState: " + ex.getSQLState());
-			logger.log("VendorError: " + ex.getErrorCode());
-
-			return false;
-			
-		} finally {
-			context.getLogger().log("Closing the connection.");
-			if (dbcon != null)
-				try {
-					dbcon.close();
-				} catch (SQLException ignore) {
-					logger.log("SQL Error: Problem closing connection.");
-				}
-		}
-    }
-	
+    	
 }
