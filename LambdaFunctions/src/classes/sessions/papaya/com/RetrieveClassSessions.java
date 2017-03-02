@@ -132,13 +132,14 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 			 * 		1. Update authentication_key for user_id.
 			 */
 			
+			// TODO: Accidentally made class retriever instead of session retriever.
 			String setauth = "SELECT class_session_id FROM classes_sessions WHERE session_class_id='"+class_id+"' AND active="+1+"";
 			Statement statement = con.createStatement();
 			ResultSet result = statement.executeQuery(setauth);
 			
 			ArrayList<String> class_ids = new ArrayList<String>();
 			while (result.next()) {
-				class_ids.add(result.getInt("active"));
+				class_ids.add(result.getString(0));
 			}
 			response.put("class_ids", class_ids);
 			

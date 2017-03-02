@@ -72,11 +72,14 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 		 */
 
 		// Check for required key
-		if ((!papaya_json.containsKey("user_id") || !(papaya_json.get("user_id") instanceof String)
-				|| !((user_id = (String) papaya_json.get("user_id")) != null))
-				|| (!papaya_json.containsKey("authentication_key") || !(papaya_json.get("authentication_key") instanceof String)
+		if ((!papaya_json.containsKey("user_id") 
+						|| !(papaya_json.get("user_id") instanceof String)
+						|| !((user_id = (String) papaya_json.get("user_id")) != null))
+				|| (!papaya_json.containsKey("authentication_key") 
+						|| !(papaya_json.get("authentication_key") instanceof String)
 						|| !((authentication_key = (String) papaya_json.get("authentication_key")) != null))
-				|| (!papaya_json.containsKey("service") || !(papaya_json.get("service") instanceof String)
+				|| (!papaya_json.containsKey("service") 
+						|| !(papaya_json.get("service") instanceof String)
 						|| !((service = (String) papaya_json.get("service")) != null))) {
 
 			// TODO: Add "fields" that were actually the problem.
@@ -213,7 +216,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 			statement.execute(insertSession);
 			statement.close();
 			
-			String insertClassSession = "INSERT INTO classes_sessions VALUES ('" + session_id + "', '" + class_id + "')";
+			String insertClassSession = "INSERT INTO classes_sessions VALUES (" + active + ", '" + session_id + "', '" + class_id + "')";
 			statement = con.createStatement();
 			statement.execute(insertClassSession);
 			statement.close();
