@@ -8,6 +8,8 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -53,6 +55,11 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 		String user_id = "";
 		Integer duration;
 		Double location_lat, location_long;
+		//TODO account for timezone
+		Date date = new Date();
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		String startTime = sdf.format(date);
+		int active = 1;
 		// Optional request fields:
 		String sponsor = "";
 
@@ -118,7 +125,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 		}
 		if(!(path.containsKey("path"))
 				|| !(path.get("path") instanceof Map)
-				|| !((path = (Map<String, Object>) input.get("path")) != null)) {
+				|| !((path = (Map<String, Object>) path.get("path")) != null)) {
 			logger.log("Could not access path field of AWS ransformed JSON.");
 			return throw400("path field, when looking for the class_id is not in AWS transformed JSON.", "class_id");
 		}
@@ -201,7 +208,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 			String insertSession = "INSERT INTO sessions VALUES ('" + session_id + "', '" 
 						+ user_id + "', " + duration + ", '" + location_desc + "', '" 
 						+ description + "', '" + sponsor + "', " + location_lat.floatValue() 
-						+ ", " + location_long.floatValue() + ")";
+						+ ", " + location_long.floatValue() + ", '" + startTime + "')";
 			Statement statement = con.createStatement();
 			statement.execute(insertSession);
 			statement.close();
@@ -211,6 +218,17 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 			statement.execute(insertClassSession);
 			statement.close();
 
+			String insertUserSession = "INSERT INTO users_sessions VALUES (" + active + ", '" + user_id + "', '" + session_id + "')";
+			statement = con.createStatement();
+			statement.execute(insertUserSession);
+			statement.close();
+			
+			String updateUser = "UPDATE users SET current_session_id='" + session_id + "' WHERE user_id='" + user_id + "'";
+			statement = con.createStatement();
+			statement.execute(updateUser);
+			statement.close();
+			
+			
 		} catch (SQLException ex) {
 			// handle any errors
 			logger.log("SQLException: " + ex.getMessage());
