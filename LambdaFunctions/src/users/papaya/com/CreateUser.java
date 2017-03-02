@@ -1,22 +1,21 @@
 package users.papaya.com;
 
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.amazonaws.util.Md5Utils;
 
+import utils.papaya.com.AuthServiceType;
 import utils.papaya.com.UIDGenerator;
+import utils.papaya.com.Authentication;
+import static utils.papaya.com.ResponseGenerator.*;
 
 public class CreateUser implements RequestHandler<Map<String, Object>, Map<String, Object>> {
 
@@ -29,29 +28,18 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 	 * 
 	 * 	For description of the API requirements, seek the API Documentation in developers folder.
 	 */
-	
-	private static final String SERVICE_FACEBOOK = "FACEBOOK";
-	private static final String SERVICE_GOOGLE = "GOOGLE";
-	
-	private static final int FACEBOOK_KEY_MAX_LEN = 45;
-	private static final int FACEBOOK_KEY_MIN_LEN = 40;
-	private static final int GOOGLE_KEY_MAX_LEN = 45;
-	private static final int GOOGLE_KEY_MIN_LEN = 40;
-	
-	private static enum SERVICE_TYPE {
-		FACEBOOK, GOOGLE, NONE
-	}
+
 	
 	private Context context;
 	private LambdaLogger logger;
-	
+
 	@Override
 	public Map<String, Object> handleRequest(Map<String, Object> input, Context context) {
 		
 		this.context = context;
 		this.logger = context.getLogger();
 		Map<String, Object> response = new HashMap<String, Object>();
-		SERVICE_TYPE service_type = SERVICE_TYPE.NONE;
+		AuthServiceType service_type = AuthServiceType.NONE;
 		String user_id = "";
 		// Required request fields:
 		String username, authentication_key, service;
@@ -95,10 +83,10 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 			username = username.substring(0, 45);
 		
 		// 2. validate 'service' field is a recognizable type
-		if (service.contentEquals(SERVICE_FACEBOOK)) {
-			service_type = SERVICE_TYPE.FACEBOOK;
-		} else if (service.contentEquals(SERVICE_GOOGLE)) {
-			service_type = SERVICE_TYPE.GOOGLE;
+		if (service.contentEquals(Authentication.SERVICE_FACEBOOK)) {
+			service_type = AuthServiceType.FACEBOOK;
+		} else if (service.contentEquals(Authentication.SERVICE_GOOGLE)) {
+			service_type = AuthServiceType.GOOGLE;
 		} else {
 			logger.log("ERROR: 400 Bad Request - Returned to client. Service was of an unrecognizable type '" + service + "'.");
 			return throw400("service was of an unrecognizable type '" + service + "'.", "service");
@@ -106,12 +94,12 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 				
 		// 2. validate 'authentication_key' is of length allowed?
 		// TODO: Determine more strict intro rules
-		if (service_type == SERVICE_TYPE.FACEBOOK 
-						&& (authentication_key.length() > FACEBOOK_KEY_MAX_LEN
-								|| authentication_key.length() < FACEBOOK_KEY_MIN_LEN)
-				|| service_type == SERVICE_TYPE.GOOGLE
-						&& (authentication_key.length() > GOOGLE_KEY_MAX_LEN
-								|| authentication_key.length() < GOOGLE_KEY_MIN_LEN)) {
+		if (service_type == AuthServiceType.FACEBOOK 
+						&& (authentication_key.length() > Authentication.FACEBOOK_KEY_MAX_LEN
+								|| authentication_key.length() < Authentication.FACEBOOK_KEY_MIN_LEN)
+				|| service_type == AuthServiceType.GOOGLE
+						&& (authentication_key.length() > Authentication.GOOGLE_KEY_MAX_LEN
+								|| authentication_key.length() < Authentication.GOOGLE_KEY_MIN_LEN)) {
 			logger.log("ERROR: 400 Bad Request - Returned to client. authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.");
 			return throw400("authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.", "authentication_key");
 		}
@@ -122,7 +110,7 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 				&& (input.get("phone") instanceof Integer)) {
 			
 			// phone exists, now check if it is of proper format.
-			phone = ((Integer) input.get("phone")).intValue();
+			phone = ((Long) input.get("phone")).longValue();
 			
 			if (// phone is 7 digits
 					!(phone > 999999l
@@ -168,22 +156,25 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 		
 		/*
 		 * ### Generate unique user_id number and validate its uniqueness.
-		 * 
 		 */
-		Connection con = getRemoteConnection(context);
 		user_id = UIDGenerator.generateUID(username);
+		boolean exists = false;
+		Connection con = getRemoteConnection(context);
 		
-		for (int i = 0; userIDExists(user_id, con) && i < 3; i++) {
-			user_id = UIDGenerator.generateUID(username);
-		}
-		
-		// TODO: Execute SQL!
 		try {
-
-			String insertUser = "INSERT INTO users VALUES ('" + input.get("user_id") + "', '"
-					+ input.get("username") + "', " + input.get("phone") + ", " + "'"
-					+ input.get("email") + "', '" + input.get("authentication_key") + "', '"
-					+ input.get("current_session_id") + "')";
+			
+			for (int i = 0; (exists = userIDExists(user_id, con)) && i < 3; i++) {
+				user_id = UIDGenerator.generateUID(username);
+			}
+			if (exists) {
+				logger.log("ERROR: 500 Internal Server Error - Returned to client. Could not generate a UID on 3 tries.");
+				return throw500("generateUID() failed 3 times. Try recalling.");
+			}
+			
+			String insertUser = "INSERT INTO users VALUES ('" + user_id + "', '"
+					+ username + "', " + phone + ", " + "'"
+					+ email + "', '" + authentication_key + "', '"
+					+ "" + "')";
 			Statement statement = con.createStatement();
 			statement.addBatch(insertUser);
 			statement.executeBatch();
@@ -207,8 +198,8 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 				}
 		}
 		
-		response.put("code", 200);
-		response.put("code_description", "OK");
+		response.put("code", 201);
+		response.put("code_description", "Created");
 		response.put("user_id", user_id);
 		response.put("authentication_key", authentication_key);
 		return response;
@@ -240,57 +231,16 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 	}
     
     
-    private boolean userIDExists(String user_id, Connection dbcon)
+    private boolean userIDExists(String user_id, Connection dbcon) throws SQLException
     {
-    	try {
-			String getUser = "SELECT user_id from users where user_id='"+user_id+"'";
-			Statement statement = dbcon.createStatement();
-			ResultSet result = statement.executeQuery(getUser);
-			statement.close();
-			if (result.next())
-				return true;
-			else
-				return false;
-
-		} catch (SQLException ex) {
-			// handle any errors
-			logger.log("SQLException: " + ex.getMessage());
-			logger.log("SQLState: " + ex.getSQLState());
-			logger.log("VendorError: " + ex.getErrorCode());
-
+		String getUser = "SELECT user_id FROM users WHERE user_id='"+user_id+"'";
+		Statement statement = dbcon.createStatement();
+		ResultSet result = statement.executeQuery(getUser);
+		statement.close();
+		if (result.next())
+			return true;
+		else
 			return false;
-			
-		} finally {
-			context.getLogger().log("Closing the connection.");
-			if (dbcon != null)
-				try {
-					dbcon.close();
-				} catch (SQLException ignore) {
-					logger.log("SQL Error: Problem closing connection.");
-				}
-		}
     }
     
-    
-    /**
-     * ERROR MESSAGE THROWING METHODS:
-     */
-    
-    private static Map<String, Object> throw400(String message, String fields) {
-    	Map<String, Object> response = new HashMap<String, Object>();
-		response.put("code", 400);
-		response.put("code_description", "Bad Request");
-		response.put("error_description", message);
-		response.put("fields", fields);
-		return response;
-    }
-    
-    private static Map<String, Object> throw500(String message) {
-    	Map<String, Object> response = new HashMap<String, Object>();
-    	response.put("code", 500);
-    	response.put("code_description", "Internal Server Error");
-    	response.put("error_description", message);
-    	return response;
-    }
-
 }
