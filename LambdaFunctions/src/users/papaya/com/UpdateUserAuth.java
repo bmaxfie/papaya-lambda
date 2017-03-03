@@ -14,6 +14,9 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 
 import utils.papaya.com.AuthServiceType;
 import utils.papaya.com.Authentication;
+import utils.papaya.com.Exception400;
+import utils.papaya.com.Validate;
+
 import static utils.papaya.com.ResponseGenerator.*;
 
 public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<String, Object>> {
@@ -37,13 +40,12 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 		
 		this.context = context;
 		this.logger = context.getLogger();
-		@SuppressWarnings("unchecked")
-		Map<String, Object> papaya_json = (Map<String, Object>) input.get("body-json");
+		Map<String, Object> json;
 		Map<String, Object> response = new HashMap<String, Object>();
 		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required request fields:
-		Integer auth_option;
-		String user_id = "", username = "", email = "", authentication_key = "", service = "";
+		int auth_option;
+		String user_id = "", username = "", email = "", authentication_key = "";
 		
 		/*
 		 * 1. Check request body (validate) for proper format of fields:
@@ -59,117 +61,27 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 		 * 		// TODO: Check for SQL INJECTION!
 		 */
 		
-		// Check for required keys.
-		if ( (!papaya_json.containsKey("auth_option") 
-						|| !(papaya_json.get("auth_option") instanceof Integer)
-						|| !((auth_option = (Integer) papaya_json.get("auth_option")) != null))
-				|| (!papaya_json.containsKey("authentication_key") 
-						|| !(papaya_json.get("authentication_key") instanceof String)
-						|| !((authentication_key = (String) papaya_json.get("authentication_key")) != null))
-				|| (!papaya_json.containsKey("service"))
-						|| !(papaya_json.get("service") instanceof String)
-						|| !((service = (String) papaya_json.get("service")) != null)) {
+		try {
+			// Find path:
+			json = Validate.field(input, "body-json");
 			
-			// TODO: Add "fields" that were actually the problem.
-	    	logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return generate400("auth_option or authentication_key or service do not exist.", "");
-		}
-		
-		// Check for more required keys:
-		// If 1, user_id is defined
-		if (auth_option.intValue() == 1) {
-			if (!papaya_json.containsKey("user_id")
-						|| !(papaya_json.get("user_id") instanceof String)
-						|| !((user_id = (String) papaya_json.get("user_id")) != null)) {
-				logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-				return generate400("user_id does not exist.", "user_id");
+			// Validate required fields:
+			auth_option = Validate.auth_option(json);
+			service_type = Validate.service(json);
+			authentication_key = Validate.authentication_key(json, service_type);
+			if (auth_option == 1) {
+				user_id = Validate.user_id(json);
+			} else if (auth_option == 2) {
+				username = Validate.username(json);
+				email = Validate.email(json);
+			} else {
+				logger.log("ERROR: 400 Bad Request - Returned to client. Required auth_option to be of a set range of values.");
+				return generate400("auth_option was not of a value in the range acceptable.", "auth_option");
 			}
-		} // If 2, username & email are defined
-		else if (auth_option.intValue() == 2) {
-			if (!papaya_json.containsKey("username")
-						|| !(papaya_json.get("username") instanceof String)
-						|| !((username = (String) papaya_json.get("username")) != null)
-				|| !papaya_json.containsKey("email")
-						|| !(papaya_json.get("email") instanceof String)
-						|| !((username = (String) papaya_json.get("email")) != null)) {
-				
-				logger.log("ERROR: 400 Bad Request - Returned to client. Required fields (username or email) did not exist or are empty.");
-				return generate400("username or email does not exist.", "username, email");
-			}
+		} catch (Exception400 e400) {
+			logger.log(e400.getMessage());
+			return e400.getResponse();
 		}
-		else {
-			logger.log("ERROR: 400 Bad Request - Returned to client. Required auth_option to be of a set range of values.");
-			return generate400("auth_option was not of a value in the range acceptable.", "auth_option");
-		}
-		
-		// Check for proper formatting of supplied elements. Check by field.
-		//		auth_option has already been verified.
-		
-		// 1. validate 'user_id' if auth_option == 1.
-		if (auth_option.intValue() == 1) {
-			if (!papaya_json.containsKey("user_id")
-						|| !(papaya_json.get("user_id") instanceof String)
-						|| !((user_id = (String) papaya_json.get("user_id")) != null)) {
-				
-				logger.log("ERROR: 400 Bad Request - Returned to client. Required user_id doesn't exist despite given auth_option value.");
-				return generate400("user_id does not exist.", "user_id");
-				
-			} else if (user_id.length() > 45) {
-				user_id = user_id.substring(0, 45);
-			}
-		}
-		
-		// 2. validate 'service' field is a recognizable type
-		if (service.contentEquals(Authentication.SERVICE_FACEBOOK)) {
-			service_type = AuthServiceType.FACEBOOK;
-		} else if (service.contentEquals(Authentication.SERVICE_GOOGLE)) {
-			service_type = AuthServiceType.GOOGLE;
-		} else {
-			logger.log("ERROR: 400 Bad Request - Returned to client. Service was of an unrecognizable type '" + service + "'.");
-			return generate400("service was of an unrecognizable type '" + service + "'.", "service");
-		}
-		
-		// 3. validate 'username' field if auth_option == 2. Check if field is of length allowed in database, otherwise truncate.
-		if (auth_option.intValue() == 2) {
-			if (!papaya_json.containsKey("username")
-						|| !(papaya_json.get("username") instanceof String)
-						|| !((username = (String) papaya_json.get("username")) != null)) {
-				
-				logger.log("ERROR: 400 Bad Request - Returned to client. Required username doesn't exist despite given auth_option value.");
-				return generate400("username does not exist.", "username");
-				
-			} else if (username.length() > 45) {
-				username = username.substring(0, 45);
-			}
-		}
-		
-		// 4. validate 'email' field if auth_option == 2. Check if field is of acceptable format and length.
-		if (auth_option.intValue() == 2 && papaya_json.containsKey("email")
-				&& (papaya_json.get("email") instanceof String)) {
-			
-			email = (String) papaya_json.get("email");
-			
-			if (email.length() > 45
-					// Regex is supposed to loosely match general email form.
-					|| !email.matches(".{3,}@.{3,}\\..{2,}")) {
-				
-				logger.log("ERROR: 400 Bad Request - Returned to client. email was not formatted right (i.e. length or no @ or no domain) '" + email + "'.");
-				return generate400("email was not formatted right (i.e. length or no @ or no domain) '" + email + "'.", "email");
-			}
-		}
-				
-		// 5. validate 'authentication_key' is of length allowed?
-		// TODO: Determine more strict intro rules
-		if (service_type == AuthServiceType.FACEBOOK 
-						&& (authentication_key.length() > Authentication.FACEBOOK_KEY_MAX_LEN
-								|| authentication_key.length() < Authentication.FACEBOOK_KEY_MIN_LEN)
-				|| service_type == AuthServiceType.GOOGLE
-						&& (authentication_key.length() > Authentication.GOOGLE_KEY_MAX_LEN
-								|| authentication_key.length() < Authentication.GOOGLE_KEY_MIN_LEN)) {
-			logger.log("ERROR: 400 Bad Request - Returned to client. authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.");
-			return generate400("authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.", "authentication_key");
-		}
-		
 		
 		/*
 		 * 2. Authentic authentication_key check:
@@ -187,7 +99,7 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 			 * 
 			 * 		1. Get user_id if not supplied from API call.
 			 */
-			if (auth_option.intValue() == 2) {
+			if (auth_option == 2) {
 				String getuser_id = "SELECT user_id FROM users WHERE username='"+username+"' AND email='"+email+"'";
 				Statement statement = con.createStatement();
 				ResultSet result = statement.executeQuery(getuser_id);

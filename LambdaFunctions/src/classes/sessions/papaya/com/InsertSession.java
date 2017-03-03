@@ -1,7 +1,6 @@
 package classes.sessions.papaya.com;
 
-import static utils.papaya.com.ResponseGenerator.generate400;
-import static utils.papaya.com.ResponseGenerator.generate500;
+import static utils.papaya.com.ResponseGenerator.*;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -19,7 +18,9 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 
 import utils.papaya.com.AuthServiceType;
 import utils.papaya.com.Authentication;
+import utils.papaya.com.Exception400;
 import utils.papaya.com.UIDGenerator;
+import utils.papaya.com.Validate;
 
 public class InsertSession implements RequestHandler<Map<String, Object>, Map<String, Object>> {
 	/**
@@ -43,6 +44,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 
 		this.context = context;
 		this.logger = context.getLogger();
+		Map<String, Object> json, path;
 		Map<String, Object> response = new HashMap<String, Object>();
 		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required fields:
@@ -66,111 +68,26 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 		 * 
 		 * // TODO: Check for SQL INJECTION!
 		 */
-
-		// Check for required key
-		if ((!papaya_json.containsKey("user_id") 
-						|| !(papaya_json.get("user_id") instanceof String)
-						|| !((user_id = (String) papaya_json.get("user_id")) != null))
-				|| (!papaya_json.containsKey("authentication_key") 
-						|| !(papaya_json.get("authentication_key") instanceof String)
-						|| !((authentication_key = (String) papaya_json.get("authentication_key")) != null))
-				|| (!papaya_json.containsKey("service") 
-						|| !(papaya_json.get("service") instanceof String)
-						|| !((service = (String) papaya_json.get("service")) != null))) {
-
-			// TODO: Add "fields" that were actually the problem.
-			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return generate400("user_id or authentication_key or service do not exist.", "");
-		}
-		if (!papaya_json.containsKey("duration") 
-				|| !(papaya_json.get("duration") instanceof Integer)
-				|| !((duration = (Integer) papaya_json.get("duration")) != null)) {
-			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return generate400("Duration does not exist", "");
-		}
-		if (!papaya_json.containsKey("location_lat") 
-				|| !(papaya_json.get("location_lat") instanceof Double)
-				|| !((location_lat = (Double) papaya_json.get("location_lat")) != null)) {
-			logger.log("loc_lat: " + papaya_json.get("location_lat").getClass().getName());
-			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return generate400("location_lat does not exist", "");
-		}
-		if (!papaya_json.containsKey("location_long") 
-				|| !(papaya_json.get("location_long") instanceof Double)
-				|| !((location_long = (Double) papaya_json.get("location_long")) != null)) {
-			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return generate400("location_long does not exist.", "");
-		}
-		if ((!papaya_json.containsKey("location_desc") 
-				|| !(papaya_json.get("location_desc") instanceof String)
-				|| !((location_desc = (String) papaya_json.get("location_desc")) != null))) {
-			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return generate400("location_desc does not exist.", "");
-		}
 		
-		if ((!papaya_json.containsKey("description") 
-				|| !(papaya_json.get("description") instanceof String)
-				|| !((description = (String) papaya_json.get("description")) != null))) {
-			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return generate400("description does not exist.", "");
-		}
-
-		Map<String, Object> path;
-		if(!input.containsKey("params")
-				|| !(input.get("params") instanceof Map)
-				|| !((path = (Map<String, Object>) input.get("params")) != null)) {
-			logger.log("Could not access params field of AWS transformed JSON.");
-			return generate400("params field, when looking for the class_id is not in AWS transformed JSON.", "class_id");
-		}
-		if(!(path.containsKey("path"))
-				|| !(path.get("path") instanceof Map)
-				|| !((path = (Map<String, Object>) path.get("path")) != null)) {
-			logger.log("Could not access path field of AWS ransformed JSON.");
-			return generate400("path field, when looking for the class_id is not in AWS transformed JSON.", "class_id");
-		}
-		if(!(path.containsKey("class-id")) 
-				|| !(path.get("class-id") instanceof String)
-				|| !((class_id = (String) path.get("class-id")) != null)) {
-			logger.log("id does not exist/is null");
-			return generate400("id does not exist/is null.", "");
-		}
-		
-		// 2. validate 'service' field is a recognizable type
-		if (service.contentEquals(Authentication.SERVICE_FACEBOOK)) {
-			service_type = AuthServiceType.FACEBOOK;
-		} else if (service.contentEquals(Authentication.SERVICE_GOOGLE)) {
-			service_type = AuthServiceType.GOOGLE;
-		} else {
-			logger.log("ERROR: 400 Bad Request - Returned to client. Service was of an unrecognizable type '" + service
-					+ "'.");
-			return generate400("service was of an unrecognizable type '" + service + "'.", "service");
-		}
-
-		// 2. validate 'authentication_key' is of length allowed?
-		// TODO: Determine more strict intro rules
-		if (service_type == AuthServiceType.FACEBOOK
-				&& (authentication_key.length() > Authentication.FACEBOOK_KEY_MAX_LEN
-						|| authentication_key.length() < Authentication.FACEBOOK_KEY_MIN_LEN)
-				|| service_type == AuthServiceType.GOOGLE
-						&& (authentication_key.length() > Authentication.GOOGLE_KEY_MAX_LEN
-								|| authentication_key.length() < Authentication.GOOGLE_KEY_MIN_LEN)) {
-			logger.log(
-					"ERROR: 400 Bad Request - Returned to client. authentication_key was not of valid length, instead it was '"
-							+ authentication_key.length() + "'.");
-			return generate400(
-					"authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.",
-					"authentication_key");
-		}
-
-
-		// 5. validate 'sponsor' is of acceptable format and length if it exists.
-		if (papaya_json.containsKey("sponsor") 
-				&& (papaya_json.get("sponsor") instanceof String)
-				&& (sponsor = (String) papaya_json.get("sponsor")) != null) {
+		try {
+			// Find Paths:
+			json = Validate.field(input, "body-json");
+			path = Validate.field(input, "params");
+			path = Validate.field(path, "path");
 			
-			if (sponsor.length() > 45) {
-				sponsor = sponsor.substring(0, 45);
-			}
+			user_id = Validate.user_id(json);
+			service_type = Validate.service(json);
+			authentication_key = Validate.authentication_key(json, service_type);
+			duration = Validate.duration(json);
+			location_lat = Validate.location(json, "location_lat");
+			location_long = Validate.location(json, "location_long");
+			location_desc = Validate.description(json, "location_desc");
+			description = Validate.description(json, "description");
+			sponsor = Validate.sponsor(json);
+			class_id = Validate.class_id(path);
+		} catch (Exception400 e400) {
+			logger.log(e400.getMessage());
+			return e400.getResponse();
 		}
 
 		/*
@@ -188,19 +105,28 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 		/*
 		 * ### Generate unique user_id number and validate its uniqueness.
 		 */
-		session_id = UIDGenerator.generateUID(user_id);
 		boolean exists = false;
 		Connection con = getRemoteConnection(context);
 
 		try {
+			// Checks for necessary rows in tables:
+			if (!userIDExists(user_id, con)) {
+				logger.log("ERROR: 404 Not Found - user_id does not exist in database.");
+				return generate404("user_id not found in database.");
+			}
+			if (!classIDExists(class_id, con)) {
+				logger.log("ERROR: 404 Not Found - class_id does not exist in database.");
+				return generate404("class_id not found in database.");
+			}
 
+			session_id = UIDGenerator.generateUID(user_id);
+			// Generates new UIDs:
 			for (int i = 0; (exists = sessionIDExists(session_id, con)) && i < 3; i++) {
 				//generate a session_id with user_id as the salt
 				session_id = UIDGenerator.generateUID(user_id);
 			}
 			if (exists) {
-				logger.log(
-						"ERROR: 500 Internal Server Error - Returned to client. Could not generate a UID on 3 tries.");
+				logger.log("ERROR: 500 Internal Server Error - Returned to client. Could not generate a UID on 3 tries.");
 				return generate500("generateUID() failed 3 times. Try recalling.");
 			}
 
@@ -276,6 +202,38 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 			e.printStackTrace();
 		}
 		return null;
+	}
+	
+	private boolean userIDExists(String user_id, Connection dbcon) throws SQLException {
+		String getUser = "SELECT user_id FROM users WHERE user_id='"+user_id+"'";
+		Statement statement = dbcon.createStatement();
+		ResultSet result = statement.executeQuery(getUser);
+		if (result.next()) {
+			result.close();
+			statement.close();
+			return true;
+		}
+		else {
+			result.close();
+			statement.close();
+			return false;
+		}
+	}
+	
+	private boolean classIDExists(String class_id, Connection dbcon) throws SQLException {
+		String getClass = "SELECT class_id FROM classes WHERE class_id'"+class_id+"'";
+		Statement statement = dbcon.createStatement();
+		ResultSet result = statement.executeQuery(getClass);
+		if (result.next()) {
+			result.close();
+			statement.close();
+			return true;
+		}
+		else {
+			result.close();
+			statement.close();
+			return false;
+		}
 	}
 	
 	private boolean sessionIDExists(String session_id, Connection dbcon) throws SQLException

@@ -14,7 +14,10 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 
 import utils.papaya.com.AuthServiceType;
 import utils.papaya.com.UIDGenerator;
+import utils.papaya.com.Validate;
 import utils.papaya.com.Authentication;
+import utils.papaya.com.Exception400;
+
 import static utils.papaya.com.ResponseGenerator.*;
 
 public class CreateUser implements RequestHandler<Map<String, Object>, Map<String, Object>> {
@@ -38,13 +41,12 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 		
 		this.context = context;
 		this.logger = context.getLogger();
-		@SuppressWarnings("unchecked")
-		Map<String, Object> papaya_json = (Map<String, Object>) input.get("body-json");
+		Map<String, Object> json;
 		Map<String, Object> response = new HashMap<String, Object>();
 		AuthServiceType service_type = AuthServiceType.NONE;
 		String user_id = "";
 		// Required request fields:
-		String username, authentication_key, service;
+		String username, authentication_key;
 		// Optional request fields:
 		long phone = 0;
 		String email = null;
@@ -63,88 +65,29 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 		 */
 		
 		
-		// Check for required keys.
-		if ( (!papaya_json.containsKey("username") 
-						|| !(papaya_json.get("username") instanceof String)
-						|| !((username = (String) papaya_json.get("username")) != null))
-				|| (!papaya_json.containsKey("authentication_key") 
-						|| !(papaya_json.get("authentication_key") instanceof String)
-						|| !((authentication_key = (String) papaya_json.get("authentication_key")) != null))
-				|| (!papaya_json.containsKey("service") 
-						|| !(papaya_json.get("service") instanceof String)
-						|| !((service = (String) papaya_json.get("service")) != null)) ) {
+		try {
+			// Find Path:
+			json = Validate.field(input, "body-json");
 			
-			// TODO: Add "fields" that were actually the problem.
-	    	logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return generate400("username or authentication_key or service do not exist.", papaya_json.keySet().toString());
+			// Validate required fields:
+			username = Validate.username(json);
+			service_type = Validate.service(json);
+			authentication_key = Validate.authentication_key(json, service_type);
+		} catch (Exception400 e400) {
+			logger.log(e400.getMessage());
+			return e400.getResponse();
 		}
-		
-		// Check for proper formatting of supplied elements. Check by field.
-		
-		// 1. validate 'username' field is of length allowed in database, otherwise truncate.
-		if (username.length() > 45)
-			username = username.substring(0, 45);
-		
-		// 2. validate 'service' field is a recognizable type
-		if (service.contentEquals(Authentication.SERVICE_FACEBOOK)) {
-			service_type = AuthServiceType.FACEBOOK;
-		} else if (service.contentEquals(Authentication.SERVICE_GOOGLE)) {
-			service_type = AuthServiceType.GOOGLE;
-		} else {
-			logger.log("ERROR: 400 Bad Request - Returned to client. Service was of an unrecognizable type '" + service + "'.");
-			return generate400("service was of an unrecognizable type '" + service + "'.", "service");
+		// Try to validate optional fields:
+		try {
+			phone = Validate.phone(json);
+		} catch (Exception400 e400) {
+			logger.log("phone not found, but not required.");
 		}
-				
-		// 2. validate 'authentication_key' is of length allowed?
-		// TODO: Determine more strict intro rules
-		if (service_type == AuthServiceType.FACEBOOK 
-						&& (authentication_key.length() > Authentication.FACEBOOK_KEY_MAX_LEN
-								|| authentication_key.length() < Authentication.FACEBOOK_KEY_MIN_LEN)
-				|| service_type == AuthServiceType.GOOGLE
-						&& (authentication_key.length() > Authentication.GOOGLE_KEY_MAX_LEN
-								|| authentication_key.length() < Authentication.GOOGLE_KEY_MIN_LEN)) {
-			logger.log("ERROR: 400 Bad Request - Returned to client. authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.");
-			return generate400("authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.", "authentication_key");
+		try {
+			email = Validate.email(json);
+		} catch (Exception400 e400) {
+			logger.log("email not found, but not required.");
 		}
-		
-		
-		// 4. validate 'phone' is of acceptable length and format if it exists.
-		if (papaya_json.containsKey("phone")) {
-			
-			// phone exists, now check if it is of proper format and class type.
-			if (papaya_json.get("phone") instanceof Long)
-				phone = ((Long) papaya_json.get("phone")).longValue();
-			if (papaya_json.get("phone") instanceof Integer)
-				phone = ((Integer) papaya_json.get("phone")).longValue();
-			
-			if (// phone is 7 digits
-					!(phone > 999999l
-						&& phone < 10000000l)
-				&&
-				// phone is 10 digits
-					!(phone > 999999999l
-						&& phone < 10000000000l)) {
-				
-				logger.log("ERROR: 400 Bad Request - Returned to client. phone was not formatted right (i.e. neither 7 or 10 digits long).");
-				return generate400("phone was not formatted right (i.e. neither 7 or 10 digits long): " + phone + ".", "phone");
-			}
-		}
-		
-		// 5. validate 'email' is of acceptable format and length if it exists.
-		if (papaya_json.containsKey("email")
-				&& (papaya_json.get("email") instanceof String)) {
-			
-			email = (String) papaya_json.get("email");
-			
-			if (email.length() > 45
-					// Regex is supposed to loosely match general email form.
-					|| !email.matches(".{3,}@.{3,}\\..{2,}")) {
-				
-				logger.log("ERROR: 400 Bad Request - Returned to client. email was not formatted right (i.e. length or no @ or no domain) '" + email + "'.");
-				return generate400("email was not formatted right (i.e. length or no @ or no domain) '" + email + "'.", "email");
-			}
-		}
-		
 		
 		/*
 		 * 2. Authentic authentication_key check:

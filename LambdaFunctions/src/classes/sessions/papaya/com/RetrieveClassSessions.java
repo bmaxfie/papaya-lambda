@@ -1,7 +1,5 @@
 package classes.sessions.papaya.com;
 
-import static utils.papaya.com.ResponseGenerator.generate400;
-import static utils.papaya.com.ResponseGenerator.generate404;
 import static utils.papaya.com.ResponseGenerator.generate500;
 
 import java.sql.Connection;
@@ -18,7 +16,6 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
 import utils.papaya.com.AuthServiceType;
-import utils.papaya.com.Authentication;
 import utils.papaya.com.Exception400;
 import utils.papaya.com.Validate;
 
