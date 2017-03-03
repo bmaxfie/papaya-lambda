@@ -1,9 +1,5 @@
 package classes.papaya.com;
 
-import static utils.papaya.com.ResponseGenerator.throw400;
-import static utils.papaya.com.ResponseGenerator.throw404;
-import static utils.papaya.com.ResponseGenerator.throw500;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -19,12 +15,11 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
 import utils.papaya.com.AuthServiceType;
-import utils.papaya.com.Authentication;
+import utils.papaya.com.Exception400;
 import utils.papaya.com.UIDGenerator;
+import utils.papaya.com.Validate;
+import static utils.papaya.com.ResponseGenerator.*;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 public class InsertClass implements RequestHandler<Map<String, Object>, Map<String, Object>> {
 	private Context context;
@@ -34,12 +29,12 @@ public class InsertClass implements RequestHandler<Map<String, Object>, Map<Stri
 	public Map<String, Object> handleRequest(Map<String, Object> input, Context context) {
 		this.context = context;
 		this.logger = context.getLogger();
-		Map<String, Object> papaya_json = (Map<String, Object>) input.get("body-json");
+		Map<String, Object> json;
 		Map<String, Object> response = new HashMap<String, Object>();
 		AuthServiceType service_type = AuthServiceType.NONE;
 
 		// Required request fields for authentication:
-		String authentication_key, service;
+		String authentication_key;
 		String user_id = "";
 
 		// Required request fields for SQL
@@ -54,70 +49,20 @@ public class InsertClass implements RequestHandler<Map<String, Object>, Map<Stri
 		 * 
 		 * // TODO: Check for SQL INJECTION!
 		 */
-
-		// Check for required key
-		if ((!papaya_json.containsKey("user_id") || !(papaya_json.get("user_id") instanceof String)
-				|| !((user_id = (String) papaya_json.get("user_id")) != null))
-				|| (!papaya_json.containsKey("authentication_key")
-						|| !(papaya_json.get("authentication_key") instanceof String)
-						|| !((authentication_key = (String) papaya_json.get("authentication_key")) != null))
-				|| (!papaya_json.containsKey("service") || !(papaya_json.get("service") instanceof String)
-						|| !((service = (String) papaya_json.get("service")) != null))) {
-
-			// TODO: Add "fields" that were actually the problem.
-			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return throw400("user_id or authentication_key or service do not exist.", "");
-		}
 		
-		if ((!papaya_json.containsKey("classname") 
-				|| !(papaya_json.get("classname") instanceof String)
-				|| !((classname = (String) papaya_json.get("classname")) != null))) {
-			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return throw400("classname does not exist.", "");
-		}
-		
-		if ((!papaya_json.containsKey("description") 
-				|| !(papaya_json.get("description") instanceof String)
-				|| !((description = (String) papaya_json.get("description")) != null))) {
-			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return throw400("description does not exist.", "");
-		}
-
-		// 2. validate 'service' field is a recognizable type
-		if (service.contentEquals(Authentication.SERVICE_FACEBOOK)) {
-			service_type = AuthServiceType.FACEBOOK;
-		} else if (service.contentEquals(Authentication.SERVICE_GOOGLE)) {
-			service_type = AuthServiceType.GOOGLE;
-		} else {
-			logger.log("ERROR: 400 Bad Request - Returned to client. Service was of an unrecognizable type '" + service
-					+ "'.");
-			return throw400("service was of an unrecognizable type '" + service + "'.", "service");
-		}
-
-		// 2. validate 'authentication_key' is of length allowed?
-		// TODO: Determine more strict intro rules
-		if (service_type == AuthServiceType.FACEBOOK
-				&& (authentication_key.length() > Authentication.FACEBOOK_KEY_MAX_LEN
-						|| authentication_key.length() < Authentication.FACEBOOK_KEY_MIN_LEN)
-				|| service_type == AuthServiceType.GOOGLE
-						&& (authentication_key.length() > Authentication.GOOGLE_KEY_MAX_LEN
-								|| authentication_key.length() < Authentication.GOOGLE_KEY_MIN_LEN)) {
-			logger.log(
-					"ERROR: 400 Bad Request - Returned to client. authentication_key was not of valid length, instead it was '"
-							+ authentication_key.length() + "'.");
-			return throw400(
-					"authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.",
-					"authentication_key");
-		}
-
-		// 5. validate 'sponsor' is of acceptable format and length if it exists.
-		if (papaya_json.containsKey("description") 
-				&& (papaya_json.get("description") instanceof String)
-				&& (description = (String) papaya_json.get("description")) != null) {
-					
-			if (description.length() > 255) {
-				description = description.substring(0, 255);
-			}
+		try {
+			// Find path:
+			json = Validate.field(input, "body-json");
+			
+			// Validate required fields:
+			user_id = Validate.user_id(json);
+			service_type = Validate.service(json);
+			authentication_key = Validate.authentication_key(json, service_type);
+			classname = Validate.classname(json);
+			description = Validate.description(json, "description");
+		} catch (Exception400 e400) {
+			logger.log(e400.getMessage());
+			return e400.getResponse();
 		}
 		
 		class_id = UIDGenerator.generateUID(classname);
@@ -132,7 +77,7 @@ public class InsertClass implements RequestHandler<Map<String, Object>, Map<Stri
 		try {
 			if(!userIDExists(user_id, con)) {
 				logger.log("ERROR: 404 Not Found - user_id does not exist");
-				return throw404("user_id not found");
+				return generate404("user_id not found");
 			}
 			
 			for (int i = 0; (exists = classIDExists(class_id, con)) && i < 3; i++) {
@@ -140,7 +85,7 @@ public class InsertClass implements RequestHandler<Map<String, Object>, Map<Stri
 			}
 			if (exists) {
 				logger.log("ERROR: 500 Internal Server Error - Returned to client. Could not generate a UID on 3 tries.");
-				return throw500("generateUID() failed 3 times. Try recalling.");
+				return generate500("generateUID() failed 3 times. Try recalling.");
 			}
 			
 			for (int i = 0; (exists = studentKeyExists(student_access_key, con)) && i < 3; i++) {
@@ -148,7 +93,7 @@ public class InsertClass implements RequestHandler<Map<String, Object>, Map<Stri
 			}
 			if (exists) {
 				logger.log("ERROR: 500 Internal Server Error - Returned to client. Could not generate a UID on 3 tries.");
-				return throw500("generateUID() failed 3 times (student_access_key). Try recalling.");
+				return generate500("generateUID() failed 3 times (student_access_key). Try recalling.");
 			}
 			
 			for (int i = 0; (exists = taKeyExists(ta_access_key, con)) && i < 3; i++) {
@@ -156,7 +101,7 @@ public class InsertClass implements RequestHandler<Map<String, Object>, Map<Stri
 			}
 			if (exists) {
 				logger.log("ERROR: 500 Internal Server Error - Returned to client. Could not generate a UID on 3 tries.");
-				return throw500("generateUID() failed 3 times (ta_access_key). Try recalling.");
+				return generate500("generateUID() failed 3 times (ta_access_key). Try recalling.");
 			}
 			
 			for (int i = 0; (exists = professorKeyExists(professor_access_key, con)) && i < 3; i++) {
@@ -164,12 +109,12 @@ public class InsertClass implements RequestHandler<Map<String, Object>, Map<Stri
 			}
 			if (exists) {
 				logger.log("ERROR: 500 Internal Server Error - Returned to client. Could not generate a UID on 3 tries.");
-				return throw500("generateUID() failed 3 times (professor_access_key). Try recalling.");
+				return generate500("generateUID() failed 3 times (professor_access_key). Try recalling.");
 			}
 			
-			String insertUser = "INSERT INTO classes VALUES (" + input.get("class_id") + ", " + "'"
-					+ input.get("classname") + "', " + input.get("user_access_key") + ", " + input.get("ta_access_key")
-					+ ", " + input.get("professor_access_key") + ", " + input.get("description") + ")";
+			String insertUser = "INSERT INTO classes VALUES ('" + class_id + "', " + "'"
+					+ classname + "', '" + student_access_key + "', '" + ta_access_key
+					+ "', '" + professor_access_key + "', '" + description + "')";
 			Statement statement = con.createStatement();
 			statement.addBatch(insertUser);
 			statement.executeBatch();
@@ -188,7 +133,10 @@ public class InsertClass implements RequestHandler<Map<String, Object>, Map<Stri
 				} catch (SQLException ignore) {
 				}
 		}
-		return null;
+		
+		response.put("code", 201);
+		response.put("code_description", "Created");
+		return response;
 	}
 
 	public static Connection getRemoteConnection(Context context) {

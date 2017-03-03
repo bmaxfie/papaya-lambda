@@ -35,9 +35,7 @@ public class Validate
 			
 			throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
 					generate400("username does not exist.", "username"));
-		}
-		
-		if (username.length() > 45)
+		} else if (username.length() > 45)
 			username = username.substring(0, 45);
 		return username;
 	}
@@ -154,9 +152,7 @@ public class Validate
 			
 			throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
 					generate400("class-id does not exist.", "class-id"));
-		}
-		
-		if (class_id.length() > 45)
+		} else if (class_id.length() > 45)
 			class_id = class_id.substring(0, 45);
 		
 		return class_id;
@@ -269,6 +265,20 @@ public class Validate
 		}
 		
 		return auth_option.intValue();
+	}
+	
+	public static String classname(Map<String, Object> json) throws Exception400 {
+		String classname;
+		
+		if ((!json.containsKey("classname") 
+				|| !(json.get("classname") instanceof String)
+				|| !((classname = (String) json.get("classname")) != null))) {
+			
+			throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+					generate400("classname does not exist.", "classname"));
+		} else if (classname.length() > 45)
+			classname = classname.substring(0, 45);
+		return classname;
 	}
 	
 }
