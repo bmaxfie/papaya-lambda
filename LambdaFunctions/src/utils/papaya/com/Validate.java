@@ -178,4 +178,97 @@ public class Validate
 		return user_id;
 	}
 	
+	public static int duration(Map<String, Object> json) throws Exception400 {
+		Integer duration;
+		
+		if (!json.containsKey("duration")
+				|| !(json.get("duration") instanceof Integer)
+				|| !((duration = (Integer) json.get("duration")) != null)) {
+			
+			throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+				generate400("duration does not exist.", "duration"));
+		} else if (duration > 1440)
+			throw new Exception400("ERROR: 400 Bad Request - Returned to client. duration is too long (longer than 24 hours).",
+					generate400("duration is too long (> 1440 mins).", "duration"));
+		
+		return duration.intValue();
+	}
+	
+	public static double location(Map<String, Object> json, String fieldname) throws Exception400 {
+		Double location;
+		
+		if (!json.containsKey(fieldname)
+				|| !(json.get(fieldname) instanceof Double)
+				|| !((location = (Double) json.get(fieldname)) != null)) {
+			
+			throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+					generate400(fieldname+" does not exist.", fieldname));
+		}
+		
+		return location.doubleValue();
+	}
+	
+	public static String description(Map<String, Object> json, String fieldname) throws Exception400 {
+		String description;
+		
+		if (!json.containsKey(fieldname)
+				|| !(json.get(fieldname) instanceof Double)
+				|| !((description = (String) json.get(fieldname)) != null)) {
+			
+			throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+					generate400(fieldname+" does not exist.", fieldname));
+		}
+		else if (description.length() > 255)
+			throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+					generate400(fieldname+" is too long (> 255 characters).", fieldname));
+		
+		return description;
+	}
+	
+	public static String sponsor(Map<String, Object> json) throws Exception400 {
+		String sponsor;
+		
+		if (!json.containsKey("sponsor")
+				|| !(json.get("sponsor") instanceof String)
+				|| !((sponsor = (String) json.get("sponsor")) != null)) {
+		
+		throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+				generate400("sponsor does not exist.", "sponsor"));
+		} else if (sponsor.length() > 45) {
+			sponsor = sponsor.substring(0, 45);
+		}
+		
+		return sponsor;
+	}
+	
+	public static String access_key(Map<String, Object> json) throws Exception400 {
+		String access_key;
+		
+		if (!json.containsKey("access_key")
+				|| !(json.get("access_key") instanceof String)
+				|| !((access_key = (String) json.get("access_key")) != null)) {
+		
+			throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+					generate400("access_key does not exist.", "access_key"));
+		} else if (access_key.length() > 45) {
+			access_key = access_key.substring(0, 45);
+		}
+		
+		return access_key;
+	}
+	
+	public static Integer auth_option(Map<String, Object> json) throws Exception400 {
+		Integer auth_option;
+		
+		if (!json.containsKey("auth_option")
+				|| !(json.get("auth_option") instanceof Integer)
+				|| !((auth_option = (Integer) json.get("auth_option")) != null)) {
+			
+			throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+					generate400("auth_option does not exist.", "auth_option"));
+		}
+		
+		return auth_option.intValue();
+	}
+	
 }

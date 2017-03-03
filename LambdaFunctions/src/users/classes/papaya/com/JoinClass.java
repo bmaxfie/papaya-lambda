@@ -63,31 +63,6 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 		 * 		// TODO: Check for SQL INJECTION!
 		 */
 		
-		// Check for required keys.
-		if ( (!papaya_json.containsKey("user_id") 
-						|| !(papaya_json.get("user_id") instanceof String)
-						|| !((user_id = (String) papaya_json.get("user_id")) != null))
-				|| (!papaya_json.containsKey("authentication_key") 
-						|| !(papaya_json.get("authentication_key") instanceof String)
-						|| !((authentication_key = (String) papaya_json.get("authentication_key")) != null))
-				|| (!papaya_json.containsKey("service") 
-						|| !(papaya_json.get("service") instanceof String)
-						|| !((service = (String) papaya_json.get("service")) != null)) 
-				|| (!papaya_json.containsKey("access_key") 
-						|| !(papaya_json.get("access_key") instanceof String)
-						|| !((access_key = (String) papaya_json.get("access_key")) != null)) 
-			) {
-			
-			// TODO: Add "fields" that were actually the problem.
-	    	logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return generate400("user_id or authentication_key or service or access_key do not exist.", "");
-		}
-		
-		// Check for proper formatting of supplied elements. Check by field.
-		
-				
-		
-
 		try {
 			// Find paths:
 			json = Validate.field(input, "body-json");
@@ -99,6 +74,8 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 			// 3. validate 'authentication_key' is of length allowed?
 			// TODO: Determine more strict intro rules
 			authentication_key = Validate.authentication_key(json, service_type);
+			// 4. validate 'access_key' is of right length
+			access_key = Validate.access_key(json);
 		} catch (Exception400 e400) {
 			logger.log(e400.getMessage());
 			return e400.getResponse();
