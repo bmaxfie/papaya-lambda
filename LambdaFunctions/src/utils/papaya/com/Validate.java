@@ -145,4 +145,21 @@ public class Validate
 		return email;
 	}
 	
+	public static String class_id(Map<String, Object> json) throws Exception400 {
+		String class_id;
+		
+		if (!json.containsKey("class-id")
+				|| !(json.get("class-id") instanceof String)
+				|| !((class_id = (String) json.get("class-id")) != null)) {
+			
+			throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+					generate400("class-id does not exist.", "class-id"));
+		}
+		
+		if (class_id.length() > 45)
+			class_id = class_id.substring(0, 45);
+		
+		return class_id;
+	}
+	
 }

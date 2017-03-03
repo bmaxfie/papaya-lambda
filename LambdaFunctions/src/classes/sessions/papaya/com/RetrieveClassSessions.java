@@ -19,6 +19,8 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 
 import utils.papaya.com.AuthServiceType;
 import utils.papaya.com.Authentication;
+import utils.papaya.com.Exception400;
+import utils.papaya.com.Validate;
 
 public class RetrieveClassSessions implements RequestHandler <Map<String, Object>, Map<String, Object>>{
 
@@ -41,8 +43,6 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 		
 		this.context = context;
 		this.logger = context.getLogger();
-		@SuppressWarnings("unchecked")
-		Map<String, Object> papaya_json = (Map<String, Object>) input.get("body-json");
 		Map<String, Object> response = new HashMap<String, Object>();
 		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required request fields:
@@ -61,13 +61,25 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 		 * 		// TODO: Check for SQL INJECTION!
 		 */
 		
+		Map<String, Object> path;
+		Map<String, Object> querystrings;
+		try {
+			path = Validate.field(input, "params");
+			querystrings = Validate.field(path, "querystring");
+			path = Validate.field(path, "path");
+			
+		} catch (Exception400 e400) {
+			logger.log(e400.getMessage());
+			return e400.getResponse();
+		}
+		
 		// Check for required keys.
-		if ((!papaya_json.containsKey("authentication_key") 
-						|| !(papaya_json.get("authentication_key") instanceof String)
-						|| !((authentication_key = (String) papaya_json.get("authentication_key")) != null))
-				|| (!papaya_json.containsKey("service"))
-						|| !(papaya_json.get("service") instanceof String)
-						|| !((service = (String) papaya_json.get("service")) != null)) {
+		if ((!querystrings.containsKey("authentication_key") 
+						|| !(querystrings.get("authentication_key") instanceof String)
+						|| !((authentication_key = (String) querystrings.get("authentication_key")) != null))
+				|| (!querystrings.containsKey("service"))
+						|| !(querystrings.get("service") instanceof String)
+						|| !((service = (String) querystrings.get("service")) != null)) {
 			
 			// TODO: Add "fields" that were actually the problem.
 	    	logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
@@ -78,9 +90,9 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 		//		auth_option has already been verified.
 		
 		// 1. validate 'user_id'
-		if (!papaya_json.containsKey("user_id")
-					|| !(papaya_json.get("user_id") instanceof String)
-					|| !((user_id = (String) papaya_json.get("user_id")) != null)) {
+		if (!querystrings.containsKey("user_id")
+					|| !(querystrings.get("user_id") instanceof String)
+					|| !((user_id = (String) querystrings.get("user_id")) != null)) {
 			
 			logger.log("ERROR: 400 Bad Request - Returned to client. Required user_id doesn't exist despite given auth_option value.");
 			return generate400("user_id does not exist.", "user_id");
@@ -112,7 +124,12 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 		}
 		
 		// 4. validate the path parameter 'class_id'
-		
+		try {
+			class_id = Validate.class_id(path);
+		} catch (Exception400 e400) {
+			logger.log(e400.getMessage());
+			return e400.getResponse();
+		}
 		
 		
 		/*
@@ -133,7 +150,7 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 			 */
 			
 			// TODO: Accidentally made class retriever instead of session retriever.
-			String setauth = "SELECT class_session_id FROM classes_sessions WHERE session_class_id='"+class_id+"' AND active="+1+"";
+			String setauth = "SELECT class_session_id FROM classes_sessions WHERE session_class_id='"+class_id+"' AND active=1";
 			Statement statement = con.createStatement();
 			ResultSet result = statement.executeQuery(setauth);
 			
