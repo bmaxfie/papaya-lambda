@@ -162,4 +162,20 @@ public class Validate
 		return class_id;
 	}
 	
+	public static String user_id(Map<String, Object> json) throws Exception400 {
+		String user_id;
+		
+		if (!json.containsKey("user_id")
+				|| !(json.get("user_id") instanceof String)
+				|| !((user_id = (String) json.get("user_id")) != null)) {
+		
+		throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+				generate400("user_id does not exist.", "user_id"));
+		} else if (user_id.length() > 45) {
+			user_id = user_id.substring(0, 45);
+		}
+		
+		return user_id;
+	}
+	
 }

@@ -43,14 +43,10 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 
 		this.context = context;
 		this.logger = context.getLogger();
-		Map<String, Object> papaya_json = (Map<String, Object>) input.get("body-json");
 		Map<String, Object> response = new HashMap<String, Object>();
 		AuthServiceType service_type = AuthServiceType.NONE;
-
-		// Required request fields for authentication:
+		// Required fields:
 		String authentication_key, service;
-
-		// Required request fields for SQL
 		String session_id, location_desc, description, class_id;
 		String user_id = "";
 		Integer duration;
@@ -132,9 +128,9 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 			logger.log("Could not access path field of AWS ransformed JSON.");
 			return generate400("path field, when looking for the class_id is not in AWS transformed JSON.", "class_id");
 		}
-		if(!(path.containsKey("id")) 
-				|| !(path.get("id") instanceof String)
-				|| !((class_id = (String) path.get("id")) != null)) {
+		if(!(path.containsKey("class-id")) 
+				|| !(path.get("class-id") instanceof String)
+				|| !((class_id = (String) path.get("class-id")) != null)) {
 			logger.log("id does not exist/is null");
 			return generate400("id does not exist/is null.", "");
 		}

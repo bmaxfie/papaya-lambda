@@ -18,6 +18,8 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 
 import utils.papaya.com.AuthServiceType;
 import utils.papaya.com.Authentication;
+import utils.papaya.com.Exception400;
+import utils.papaya.com.Validate;
 
 public class GetClasses implements RequestHandler<Map<String, Object>, Map<String, Object>>{
 
@@ -57,62 +59,23 @@ public class GetClasses implements RequestHandler<Map<String, Object>, Map<Strin
 		 * 		// TODO: Check for SQL INJECTION!
 		 */
 		
-		// Get path to querystrings
-		if (!input.containsKey("params")
-						|| !(input.get("params") instanceof Map)
-						|| !((papaya_json = (Map<String, Object>) input.get("params")) != null)
-				|| !papaya_json.containsKey("querystring")
-						|| !(papaya_json.get("querystring") instanceof Map)
-						|| !((papaya_json = (Map<String, Object>) papaya_json.get("querystring")) != null)) {
+		
+		Map<String, Object> querystring;
+		try {
+			// Find Paths:
+			querystring = Validate.field(input, "params");
+			querystring = Validate.field(querystring, "querystring");
 			
-			logger.log("ERROR: 400 Bad Request - Returned to client. Required path to querystring did not exist or are empty.");
-			return generate400("path to querystring does not exist.", "params or querystring");
-		}
-		
-		// Check for required keys.
-		if (!papaya_json.containsKey("user_id")
-						|| !(papaya_json.get("user_id") instanceof String)
-						|| !((user_id = (String) papaya_json.get("user_id")) != null)
-				|| (!papaya_json.containsKey("authentication_key") 
-						|| !(papaya_json.get("authentication_key") instanceof String)
-						|| !((authentication_key = (String) papaya_json.get("authentication_key")) != null))
-				|| (!papaya_json.containsKey("service"))
-						|| !(papaya_json.get("service") instanceof String)
-						|| !((service = (String) papaya_json.get("service")) != null)) {
-			
-			// TODO: Add "fields" that were actually the problem.
-	    	logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return generate400("user_id or authentication_key or service do not exist.", "");
-		}
-		
-		// Check for proper formatting of supplied elements. Check by field.
-		//		auth_option has already been verified.
-		
-		// 1. validate 'user_id'
-		if (user_id.length() > 45) {
-			user_id = user_id.substring(0, 45);
-		}
-		
-		// 2. validate 'service' field is a recognizable type
-		if (service.contentEquals(Authentication.SERVICE_FACEBOOK)) {
-			service_type = AuthServiceType.FACEBOOK;
-		} else if (service.contentEquals(Authentication.SERVICE_GOOGLE)) {
-			service_type = AuthServiceType.GOOGLE;
-		} else {
-			logger.log("ERROR: 400 Bad Request - Returned to client. Service was of an unrecognizable type '" + service + "'.");
-			return generate400("service was of an unrecognizable type '" + service + "'.", "service");
-		}
-				
-		// 3. validate 'authentication_key' is of length allowed?
-		// TODO: Determine more strict intro rules
-		if (service_type == AuthServiceType.FACEBOOK 
-						&& (authentication_key.length() > Authentication.FACEBOOK_KEY_MAX_LEN
-								|| authentication_key.length() < Authentication.FACEBOOK_KEY_MIN_LEN)
-				|| service_type == AuthServiceType.GOOGLE
-						&& (authentication_key.length() > Authentication.GOOGLE_KEY_MAX_LEN
-								|| authentication_key.length() < Authentication.GOOGLE_KEY_MIN_LEN)) {
-			logger.log("ERROR: 400 Bad Request - Returned to client. authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.");
-			return generate400("authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.", "authentication_key");
+			// 1. validate 'user_id'
+			user_id = Validate.user_id(querystring);
+			// 2. validate 'service' field is a recognizable type
+			service_type = Validate.service(querystring);				
+			// 3. validate 'authentication_key' is of length allowed?
+			// TODO: Determine more strict intro rules
+			authentication_key = Validate.authentication_key(querystring, service_type);
+		} catch (Exception400 e400) {
+			logger.log(e400.getMessage());
+			return e400.getResponse();
 		}
 		
 		/*
@@ -142,6 +105,8 @@ public class GetClasses implements RequestHandler<Map<String, Object>, Map<Strin
 				class_ids.add(result.getString(1));
 			}
 			response.put("class_ids", class_ids.toArray());
+			
+			// TODO: Get other information about classes, like their names.
 			
 			result.close();
 			statement.close();

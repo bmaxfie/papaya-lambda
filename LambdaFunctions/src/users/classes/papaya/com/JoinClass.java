@@ -15,7 +15,10 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import utils.papaya.com.AuthServiceType;
 import utils.papaya.com.UIDGenerator;
 import utils.papaya.com.Authentication;
+import utils.papaya.com.Exception400;
 import utils.papaya.com.UserRole;
+import utils.papaya.com.Validate;
+
 import static utils.papaya.com.ResponseGenerator.*;
 
 public class JoinClass implements RequestHandler<Map<String, Object>, Map<String, Object>> {
@@ -40,8 +43,7 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 		
 		this.context = context;
 		this.logger = context.getLogger();
-		@SuppressWarnings("unchecked")
-		Map<String, Object> papaya_json = (Map<String, Object>) input.get("body-json");
+		Map<String, Object> json;
 		Map<String, Object> response = new HashMap<String, Object>();
 		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required request fields:
@@ -83,32 +85,24 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 		
 		// Check for proper formatting of supplied elements. Check by field.
 		
-		// 1. validate 'user_id' field is of length allowed in database, otherwise truncate.
-		if (user_id.length() > 45)
-			user_id = user_id.substring(0, 45);
-		
-		// 2. validate 'service' field is a recognizable type
-		if (service.contentEquals(Authentication.SERVICE_FACEBOOK)) {
-			service_type = AuthServiceType.FACEBOOK;
-		} else if (service.contentEquals(Authentication.SERVICE_GOOGLE)) {
-			service_type = AuthServiceType.GOOGLE;
-		} else {
-			logger.log("ERROR: 400 Bad Request - Returned to client. Service was of an unrecognizable type '" + service + "'.");
-			return generate400("service was of an unrecognizable type '" + service + "'.", "service");
-		}
 				
-		// 2. validate 'authentication_key' is of length allowed?
-		// TODO: Determine more strict intro rules
-		if (service_type == AuthServiceType.FACEBOOK 
-						&& (authentication_key.length() > Authentication.FACEBOOK_KEY_MAX_LEN
-								|| authentication_key.length() < Authentication.FACEBOOK_KEY_MIN_LEN)
-				|| service_type == AuthServiceType.GOOGLE
-						&& (authentication_key.length() > Authentication.GOOGLE_KEY_MAX_LEN
-								|| authentication_key.length() < Authentication.GOOGLE_KEY_MIN_LEN)) {
-			logger.log("ERROR: 400 Bad Request - Returned to client. authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.");
-			return generate400("authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.", "authentication_key");
-		}
 		
+
+		try {
+			// Find paths:
+			json = Validate.field(input, "body-json");
+			
+			// 1. validate 'user_id' field is of length allowed in database, otherwise truncate.
+			user_id = Validate.user_id(json);
+			// 2. validate 'service' and check if it matches defined service types. 
+			service_type = Validate.service(json);
+			// 3. validate 'authentication_key' is of length allowed?
+			// TODO: Determine more strict intro rules
+			authentication_key = Validate.authentication_key(json, service_type);
+		} catch (Exception400 e400) {
+			logger.log(e400.getMessage());
+			return e400.getResponse();
+		}
 		
 		
 		/*

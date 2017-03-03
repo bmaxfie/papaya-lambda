@@ -51,7 +51,7 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 		/*
 		 * 1. Check request body (validate) for proper format of fields:
 		 * 		
-		 * 		fields must exist:
+		 * 		fields must exist in querystring:
 		 * 			user_id
 		 * 			authentication_key
 		 * 			service
@@ -63,68 +63,20 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 		
 		Map<String, Object> path;
 		Map<String, Object> querystrings;
+		
 		try {
+			// Find Paths:
 			path = Validate.field(input, "params");
 			querystrings = Validate.field(path, "querystring");
 			path = Validate.field(path, "path");
 			
-		} catch (Exception400 e400) {
-			logger.log(e400.getMessage());
-			return e400.getResponse();
-		}
-		
-		// Check for required keys.
-		if ((!querystrings.containsKey("authentication_key") 
-						|| !(querystrings.get("authentication_key") instanceof String)
-						|| !((authentication_key = (String) querystrings.get("authentication_key")) != null))
-				|| (!querystrings.containsKey("service"))
-						|| !(querystrings.get("service") instanceof String)
-						|| !((service = (String) querystrings.get("service")) != null)) {
-			
-			// TODO: Add "fields" that were actually the problem.
-	    	logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return generate400("username or authentication_key or service do not exist.", "");
-		}
-		
-		// Check for proper formatting of supplied elements. Check by field.
-		//		auth_option has already been verified.
-		
-		// 1. validate 'user_id'
-		if (!querystrings.containsKey("user_id")
-					|| !(querystrings.get("user_id") instanceof String)
-					|| !((user_id = (String) querystrings.get("user_id")) != null)) {
-			
-			logger.log("ERROR: 400 Bad Request - Returned to client. Required user_id doesn't exist despite given auth_option value.");
-			return generate400("user_id does not exist.", "user_id");
-			
-		} else if (user_id.length() > 45) {
-			user_id = user_id.substring(0, 45);
-		}
-		
-		// 2. validate 'service' field is a recognizable type
-		if (service.contentEquals(Authentication.SERVICE_FACEBOOK)) {
-			service_type = AuthServiceType.FACEBOOK;
-		} else if (service.contentEquals(Authentication.SERVICE_GOOGLE)) {
-			service_type = AuthServiceType.GOOGLE;
-		} else {
-			logger.log("ERROR: 400 Bad Request - Returned to client. Service was of an unrecognizable type '" + service + "'.");
-			return generate400("service was of an unrecognizable type '" + service + "'.", "service");
-		}
-				
-		// 3. validate 'authentication_key' is of length allowed?
-		// TODO: Determine more strict intro rules
-		if (service_type == AuthServiceType.FACEBOOK 
-						&& (authentication_key.length() > Authentication.FACEBOOK_KEY_MAX_LEN
-								|| authentication_key.length() < Authentication.FACEBOOK_KEY_MIN_LEN)
-				|| service_type == AuthServiceType.GOOGLE
-						&& (authentication_key.length() > Authentication.GOOGLE_KEY_MAX_LEN
-								|| authentication_key.length() < Authentication.GOOGLE_KEY_MIN_LEN)) {
-			logger.log("ERROR: 400 Bad Request - Returned to client. authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.");
-			return generate400("authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.", "authentication_key");
-		}
-		
-		// 4. validate the path parameter 'class_id'
-		try {
+			// 1. validate 'user_id'
+			user_id = Validate.user_id(querystrings);
+			// 2. validate 'service' field is a recognizable type
+			service_type = Validate.service(querystrings);
+			// 3. validate 'authentication_key' is of length allowed?
+			authentication_key = Validate.authentication_key(querystrings, service_type);
+			// 4. validate the path parameter 'class_id'
 			class_id = Validate.class_id(path);
 		} catch (Exception400 e400) {
 			logger.log(e400.getMessage());
