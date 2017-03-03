@@ -1,7 +1,6 @@
-package classes.sessions.papaya.com;
+package users.classes.papaya.com;
 
 import static utils.papaya.com.ResponseGenerator.generate400;
-import static utils.papaya.com.ResponseGenerator.generate404;
 import static utils.papaya.com.ResponseGenerator.generate500;
 
 import java.sql.Connection;
@@ -22,7 +21,7 @@ import utils.papaya.com.Authentication;
 import utils.papaya.com.Exception400;
 import utils.papaya.com.Validate;
 
-public class RetrieveClassSessions implements RequestHandler <Map<String, Object>, Map<String, Object>>{
+public class GetClasses implements RequestHandler<Map<String, Object>, Map<String, Object>>{
 
 	/** Steps to implement a generic papaya API Lambda Function:
 	 * 
@@ -43,6 +42,7 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 		
 		this.context = context;
 		this.logger = context.getLogger();
+		Map<String, Object> papaya_json;
 		Map<String, Object> response = new HashMap<String, Object>();
 		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required request fields:
@@ -51,38 +51,32 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 		/*
 		 * 1. Check request body (validate) for proper format of fields:
 		 * 		
-		 * 		fields must exist in querystring:
+		 * 		fields must exist in string URL parameters:
 		 * 			user_id
 		 * 			authentication_key
 		 * 			service
-		 * 		
-		 * 		field from path, class_id from class/{id}/sessions
 		 * 
 		 * 		// TODO: Check for SQL INJECTION!
 		 */
 		
-		Map<String, Object> path;
-		Map<String, Object> querystrings;
 		
+		Map<String, Object> querystring;
 		try {
 			// Find Paths:
-			path = Validate.field(input, "params");
-			querystrings = Validate.field(path, "querystring");
-			path = Validate.field(path, "path");
+			querystring = Validate.field(input, "params");
+			querystring = Validate.field(querystring, "querystring");
 			
 			// 1. validate 'user_id'
-			user_id = Validate.user_id(querystrings);
+			user_id = Validate.user_id(querystring);
 			// 2. validate 'service' field is a recognizable type
-			service_type = Validate.service(querystrings);
+			service_type = Validate.service(querystring);				
 			// 3. validate 'authentication_key' is of length allowed?
-			authentication_key = Validate.authentication_key(querystrings, service_type);
-			// 4. validate the path parameter 'class_id'
-			class_id = Validate.class_id(path);
+			// TODO: Determine more strict intro rules
+			authentication_key = Validate.authentication_key(querystring, service_type);
 		} catch (Exception400 e400) {
 			logger.log(e400.getMessage());
 			return e400.getResponse();
 		}
-		
 		
 		/*
 		 * 2. Authentic authentication_key check:
@@ -102,15 +96,17 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 			 */
 			
 			// TODO: Accidentally made class retriever instead of session retriever.
-			String setauth = "SELECT class_session_id FROM classes_sessions WHERE session_class_id='"+class_id+"' AND active=1";
+			String getclasses = "SELECT user_class_id FROM users_classes WHERE class_user_id='"+user_id+"'";
 			Statement statement = con.createStatement();
-			ResultSet result = statement.executeQuery(setauth);
+			ResultSet result = statement.executeQuery(getclasses);
 			
 			ArrayList<String> class_ids = new ArrayList<String>();
 			while (result.next()) {
-				class_ids.add(result.getString(0));
+				class_ids.add(result.getString(1));
 			}
-			response.put("class_ids", class_ids);
+			response.put("class_ids", class_ids.toArray());
+			
+			// TODO: Get other information about classes, like their names.
 			
 			result.close();
 			statement.close();
@@ -164,5 +160,5 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 		}
 		return null;
 	}
-    	
+	
 }

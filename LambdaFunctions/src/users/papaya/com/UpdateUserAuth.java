@@ -72,7 +72,7 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 			
 			// TODO: Add "fields" that were actually the problem.
 	    	logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return throw400("auth_option or authentication_key or service do not exist.", "");
+			return generate400("auth_option or authentication_key or service do not exist.", "");
 		}
 		
 		// Check for more required keys:
@@ -82,7 +82,7 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 						|| !(papaya_json.get("user_id") instanceof String)
 						|| !((user_id = (String) papaya_json.get("user_id")) != null)) {
 				logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-				return throw400("user_id does not exist.", "user_id");
+				return generate400("user_id does not exist.", "user_id");
 			}
 		} // If 2, username & email are defined
 		else if (auth_option.intValue() == 2) {
@@ -94,12 +94,12 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 						|| !((username = (String) papaya_json.get("email")) != null)) {
 				
 				logger.log("ERROR: 400 Bad Request - Returned to client. Required fields (username or email) did not exist or are empty.");
-				return throw400("username or email does not exist.", "username, email");
+				return generate400("username or email does not exist.", "username, email");
 			}
 		}
 		else {
 			logger.log("ERROR: 400 Bad Request - Returned to client. Required auth_option to be of a set range of values.");
-			return throw400("auth_option was not of a value in the range acceptable.", "auth_option");
+			return generate400("auth_option was not of a value in the range acceptable.", "auth_option");
 		}
 		
 		// Check for proper formatting of supplied elements. Check by field.
@@ -112,7 +112,7 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 						|| !((user_id = (String) papaya_json.get("user_id")) != null)) {
 				
 				logger.log("ERROR: 400 Bad Request - Returned to client. Required user_id doesn't exist despite given auth_option value.");
-				return throw400("user_id does not exist.", "user_id");
+				return generate400("user_id does not exist.", "user_id");
 				
 			} else if (user_id.length() > 45) {
 				user_id = user_id.substring(0, 45);
@@ -126,7 +126,7 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 			service_type = AuthServiceType.GOOGLE;
 		} else {
 			logger.log("ERROR: 400 Bad Request - Returned to client. Service was of an unrecognizable type '" + service + "'.");
-			return throw400("service was of an unrecognizable type '" + service + "'.", "service");
+			return generate400("service was of an unrecognizable type '" + service + "'.", "service");
 		}
 		
 		// 3. validate 'username' field if auth_option == 2. Check if field is of length allowed in database, otherwise truncate.
@@ -136,7 +136,7 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 						|| !((username = (String) papaya_json.get("username")) != null)) {
 				
 				logger.log("ERROR: 400 Bad Request - Returned to client. Required username doesn't exist despite given auth_option value.");
-				return throw400("username does not exist.", "username");
+				return generate400("username does not exist.", "username");
 				
 			} else if (username.length() > 45) {
 				username = username.substring(0, 45);
@@ -154,7 +154,7 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 					|| !email.matches(".{3,}@.{3,}\\..{2,}")) {
 				
 				logger.log("ERROR: 400 Bad Request - Returned to client. email was not formatted right (i.e. length or no @ or no domain) '" + email + "'.");
-				return throw400("email was not formatted right (i.e. length or no @ or no domain) '" + email + "'.", "email");
+				return generate400("email was not formatted right (i.e. length or no @ or no domain) '" + email + "'.", "email");
 			}
 		}
 				
@@ -167,7 +167,7 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 						&& (authentication_key.length() > Authentication.GOOGLE_KEY_MAX_LEN
 								|| authentication_key.length() < Authentication.GOOGLE_KEY_MIN_LEN)) {
 			logger.log("ERROR: 400 Bad Request - Returned to client. authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.");
-			return throw400("authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.", "authentication_key");
+			return generate400("authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.", "authentication_key");
 		}
 		
 		
@@ -195,13 +195,13 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 					result.close();
 					statement.close();
 					logger.log("ERROR: 404 Not Found - Returned to client. No user could be found with the username and email given.");
-					return throw404("No user could be found with the username and email given.");
+					return generate404("No user could be found with the username and email given.");
 				}
 				if (!result.isLast()) {
 					result.close();
 					statement.close();
 					logger.log("ERROR: 500 Internal Server Error - Returned to client. More than one user was returned for username and email.");
-					return throw500("More than one user was returned for username and client.");
+					return generate500("More than one user was returned for username and client.");
 				}
 				
 				user_id = result.getString(0);
@@ -226,7 +226,7 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 			logger.log("SQLState: " + ex.getSQLState());
 			logger.log("VendorError: " + ex.getErrorCode());
 
-			return throw500(ex.getMessage());
+			return generate500(ex.getMessage());
 			
 		} finally {
 			context.getLogger().log("Closing the connection.");
@@ -234,7 +234,7 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 				try {
 					con.close();
 				} catch (SQLException ignore) {
-					return throw500(ignore.getMessage());
+					return generate500(ignore.getMessage());
 				}
 		}
 		

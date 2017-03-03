@@ -1,7 +1,7 @@
 package classes.sessions.papaya.com;
 
-import static utils.papaya.com.ResponseGenerator.throw400;
-import static utils.papaya.com.ResponseGenerator.throw500;
+import static utils.papaya.com.ResponseGenerator.generate400;
+import static utils.papaya.com.ResponseGenerator.generate500;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -43,14 +43,10 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 
 		this.context = context;
 		this.logger = context.getLogger();
-		Map<String, Object> papaya_json = (Map<String, Object>) input.get("body-json");
 		Map<String, Object> response = new HashMap<String, Object>();
 		AuthServiceType service_type = AuthServiceType.NONE;
-
-		// Required request fields for authentication:
+		// Required fields:
 		String authentication_key, service;
-
-		// Required request fields for SQL
 		String session_id, location_desc, description, class_id;
 		String user_id = "";
 		Integer duration;
@@ -72,48 +68,51 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 		 */
 
 		// Check for required key
-		if ((!papaya_json.containsKey("user_id") || !(papaya_json.get("user_id") instanceof String)
-				|| !((user_id = (String) papaya_json.get("user_id")) != null))
-				|| (!papaya_json.containsKey("authentication_key") || !(papaya_json.get("authentication_key") instanceof String)
+		if ((!papaya_json.containsKey("user_id") 
+						|| !(papaya_json.get("user_id") instanceof String)
+						|| !((user_id = (String) papaya_json.get("user_id")) != null))
+				|| (!papaya_json.containsKey("authentication_key") 
+						|| !(papaya_json.get("authentication_key") instanceof String)
 						|| !((authentication_key = (String) papaya_json.get("authentication_key")) != null))
-				|| (!papaya_json.containsKey("service") || !(papaya_json.get("service") instanceof String)
+				|| (!papaya_json.containsKey("service") 
+						|| !(papaya_json.get("service") instanceof String)
 						|| !((service = (String) papaya_json.get("service")) != null))) {
 
 			// TODO: Add "fields" that were actually the problem.
 			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return throw400("user_id or authentication_key or service do not exist.", "");
+			return generate400("user_id or authentication_key or service do not exist.", "");
 		}
 		if (!papaya_json.containsKey("duration") 
 				|| !(papaya_json.get("duration") instanceof Integer)
 				|| !((duration = (Integer) papaya_json.get("duration")) != null)) {
 			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return throw400("Duration does not exist", "");
+			return generate400("Duration does not exist", "");
 		}
 		if (!papaya_json.containsKey("location_lat") 
 				|| !(papaya_json.get("location_lat") instanceof Double)
 				|| !((location_lat = (Double) papaya_json.get("location_lat")) != null)) {
 			logger.log("loc_lat: " + papaya_json.get("location_lat").getClass().getName());
 			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return throw400("location_lat does not exist", "");
+			return generate400("location_lat does not exist", "");
 		}
 		if (!papaya_json.containsKey("location_long") 
 				|| !(papaya_json.get("location_long") instanceof Double)
 				|| !((location_long = (Double) papaya_json.get("location_long")) != null)) {
 			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return throw400("location_long does not exist.", "");
+			return generate400("location_long does not exist.", "");
 		}
 		if ((!papaya_json.containsKey("location_desc") 
 				|| !(papaya_json.get("location_desc") instanceof String)
 				|| !((location_desc = (String) papaya_json.get("location_desc")) != null))) {
 			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return throw400("location_desc does not exist.", "");
+			return generate400("location_desc does not exist.", "");
 		}
 		
 		if ((!papaya_json.containsKey("description") 
 				|| !(papaya_json.get("description") instanceof String)
 				|| !((description = (String) papaya_json.get("description")) != null))) {
 			logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return throw400("description does not exist.", "");
+			return generate400("description does not exist.", "");
 		}
 
 		Map<String, Object> path;
@@ -121,19 +120,19 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 				|| !(input.get("params") instanceof Map)
 				|| !((path = (Map<String, Object>) input.get("params")) != null)) {
 			logger.log("Could not access params field of AWS transformed JSON.");
-			return throw400("params field, when looking for the class_id is not in AWS transformed JSON.", "class_id");
+			return generate400("params field, when looking for the class_id is not in AWS transformed JSON.", "class_id");
 		}
 		if(!(path.containsKey("path"))
 				|| !(path.get("path") instanceof Map)
 				|| !((path = (Map<String, Object>) path.get("path")) != null)) {
 			logger.log("Could not access path field of AWS ransformed JSON.");
-			return throw400("path field, when looking for the class_id is not in AWS transformed JSON.", "class_id");
+			return generate400("path field, when looking for the class_id is not in AWS transformed JSON.", "class_id");
 		}
-		if(!(path.containsKey("id")) 
-				|| !(path.get("id") instanceof String)
-				|| !((class_id = (String) path.get("id")) != null)) {
+		if(!(path.containsKey("class-id")) 
+				|| !(path.get("class-id") instanceof String)
+				|| !((class_id = (String) path.get("class-id")) != null)) {
 			logger.log("id does not exist/is null");
-			return throw400("id does not exist/is null.", "");
+			return generate400("id does not exist/is null.", "");
 		}
 		
 		// 2. validate 'service' field is a recognizable type
@@ -144,7 +143,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 		} else {
 			logger.log("ERROR: 400 Bad Request - Returned to client. Service was of an unrecognizable type '" + service
 					+ "'.");
-			return throw400("service was of an unrecognizable type '" + service + "'.", "service");
+			return generate400("service was of an unrecognizable type '" + service + "'.", "service");
 		}
 
 		// 2. validate 'authentication_key' is of length allowed?
@@ -158,7 +157,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 			logger.log(
 					"ERROR: 400 Bad Request - Returned to client. authentication_key was not of valid length, instead it was '"
 							+ authentication_key.length() + "'.");
-			return throw400(
+			return generate400(
 					"authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.",
 					"authentication_key");
 		}
@@ -202,7 +201,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 			if (exists) {
 				logger.log(
 						"ERROR: 500 Internal Server Error - Returned to client. Could not generate a UID on 3 tries.");
-				return throw500("generateUID() failed 3 times. Try recalling.");
+				return generate500("generateUID() failed 3 times. Try recalling.");
 			}
 
 			String insertSession = "INSERT INTO sessions VALUES ('" + session_id + "', '" 
@@ -213,7 +212,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 			statement.execute(insertSession);
 			statement.close();
 			
-			String insertClassSession = "INSERT INTO classes_sessions VALUES ('" + session_id + "', '" + class_id + "')";
+			String insertClassSession = "INSERT INTO classes_sessions VALUES (" + active + ", '" + session_id + "', '" + class_id + "')";
 			statement = con.createStatement();
 			statement.execute(insertClassSession);
 			statement.close();
@@ -235,7 +234,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 			logger.log("SQLState: " + ex.getSQLState());
 			logger.log("VendorError: " + ex.getErrorCode());
 
-			return throw500(ex.getMessage());
+			return generate500(ex.getMessage());
 
 		} finally {
 			context.getLogger().log("Closing the connection.");
@@ -243,7 +242,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 				try {
 					con.close();
 				} catch (SQLException ignore) {
-					return throw500(ignore.getMessage());
+					return generate500(ignore.getMessage());
 				}
 		}
 

@@ -15,7 +15,10 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import utils.papaya.com.AuthServiceType;
 import utils.papaya.com.UIDGenerator;
 import utils.papaya.com.Authentication;
+import utils.papaya.com.Exception400;
 import utils.papaya.com.UserRole;
+import utils.papaya.com.Validate;
+
 import static utils.papaya.com.ResponseGenerator.*;
 
 public class JoinClass implements RequestHandler<Map<String, Object>, Map<String, Object>> {
@@ -30,6 +33,7 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 	 * 	For description of the API requirements, seek the API Documentation in developers folder.
 	 */
 
+	// TODO: MAKE SURE WE DON'T REJOIN THE SAME CLASS WE'RE ALREADY IN (JOIN 2+ TIMES).
 	
 	private Context context;
 	private LambdaLogger logger;
@@ -39,6 +43,7 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 		
 		this.context = context;
 		this.logger = context.getLogger();
+		Map<String, Object> json;
 		Map<String, Object> response = new HashMap<String, Object>();
 		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required request fields:
@@ -59,53 +64,45 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 		 */
 		
 		// Check for required keys.
-		if ( (!input.containsKey("user_id") 
-						|| !(input.get("user_id") instanceof String)
-						|| !((user_id = (String) input.get("user_id")) != null))
-				|| (!input.containsKey("authentication_key") 
-						|| !(input.get("authentication_key") instanceof String)
-						|| !((authentication_key = (String) input.get("authentication_key")) != null))
-				|| (!input.containsKey("service") 
-						|| !(input.get("service") instanceof String)
-						|| !((service = (String) input.get("service")) != null)) 
-				|| (!input.containsKey("access_key") 
-						|| !(input.get("access_key") instanceof String)
-						|| !((access_key = (String) input.get("access_key")) != null)) 
+		if ( (!papaya_json.containsKey("user_id") 
+						|| !(papaya_json.get("user_id") instanceof String)
+						|| !((user_id = (String) papaya_json.get("user_id")) != null))
+				|| (!papaya_json.containsKey("authentication_key") 
+						|| !(papaya_json.get("authentication_key") instanceof String)
+						|| !((authentication_key = (String) papaya_json.get("authentication_key")) != null))
+				|| (!papaya_json.containsKey("service") 
+						|| !(papaya_json.get("service") instanceof String)
+						|| !((service = (String) papaya_json.get("service")) != null)) 
+				|| (!papaya_json.containsKey("access_key") 
+						|| !(papaya_json.get("access_key") instanceof String)
+						|| !((access_key = (String) papaya_json.get("access_key")) != null)) 
 			) {
 			
 			// TODO: Add "fields" that were actually the problem.
 	    	logger.log("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.");
-			return throw400("user_id or authentication_key or service or access_key do not exist.", "");
+			return generate400("user_id or authentication_key or service or access_key do not exist.", "");
 		}
 		
 		// Check for proper formatting of supplied elements. Check by field.
 		
-		// 1. validate 'user_id' field is of length allowed in database, otherwise truncate.
-		if (user_id.length() > 45)
-			user_id = user_id.substring(0, 45);
-		
-		// 2. validate 'service' field is a recognizable type
-		if (service.contentEquals(Authentication.SERVICE_FACEBOOK)) {
-			service_type = AuthServiceType.FACEBOOK;
-		} else if (service.contentEquals(Authentication.SERVICE_GOOGLE)) {
-			service_type = AuthServiceType.GOOGLE;
-		} else {
-			logger.log("ERROR: 400 Bad Request - Returned to client. Service was of an unrecognizable type '" + service + "'.");
-			return throw400("service was of an unrecognizable type '" + service + "'.", "service");
-		}
 				
-		// 2. validate 'authentication_key' is of length allowed?
-		// TODO: Determine more strict intro rules
-		if (service_type == AuthServiceType.FACEBOOK 
-						&& (authentication_key.length() > Authentication.FACEBOOK_KEY_MAX_LEN
-								|| authentication_key.length() < Authentication.FACEBOOK_KEY_MIN_LEN)
-				|| service_type == AuthServiceType.GOOGLE
-						&& (authentication_key.length() > Authentication.GOOGLE_KEY_MAX_LEN
-								|| authentication_key.length() < Authentication.GOOGLE_KEY_MIN_LEN)) {
-			logger.log("ERROR: 400 Bad Request - Returned to client. authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.");
-			return throw400("authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.", "authentication_key");
-		}
 		
+
+		try {
+			// Find paths:
+			json = Validate.field(input, "body-json");
+			
+			// 1. validate 'user_id' field is of length allowed in database, otherwise truncate.
+			user_id = Validate.user_id(json);
+			// 2. validate 'service' and check if it matches defined service types. 
+			service_type = Validate.service(json);
+			// 3. validate 'authentication_key' is of length allowed?
+			// TODO: Determine more strict intro rules
+			authentication_key = Validate.authentication_key(json, service_type);
+		} catch (Exception400 e400) {
+			logger.log(e400.getMessage());
+			return e400.getResponse();
+		}
 		
 		
 		/*
@@ -136,7 +133,7 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 			}
 			else {
 				logger.log("ERROR: 400 Bad Request - Returned to client. class_id does not exist or is invalid.");
-				return throw400("class_id does not exist or is invalid", "class_id");
+				return generate400("class_id does not exist or is invalid", "class_id");
 			}
 			
 			//get the user_role
@@ -155,7 +152,7 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 					user_role = UserRole.value(UserRole.PROFESSOR);
 				else {
 					logger.log("ERROR: 400 Bad Request - Returned to client. user_role is not a value [1-3].");
-					return throw400("user_role is not a value [1-3].", "user_role");
+					return generate400("user_role is not a value [1-3].", "user_role");
 				}
 			}
 			
@@ -173,7 +170,7 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 			logger.log("SQLState: " + ex.getSQLState());
 			logger.log("VendorError: " + ex.getErrorCode());
 
-			return throw500(ex.getMessage());
+			return generate500(ex.getMessage());
 			
 		} finally {
 			context.getLogger().log("Closing the connection.");
@@ -181,7 +178,7 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 				try {
 					con.close();
 				} catch (SQLException ignore) {
-					return throw500(ignore.getMessage());
+					return generate500(ignore.getMessage());
 				}
 		}
 		
