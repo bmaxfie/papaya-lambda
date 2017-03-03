@@ -59,7 +59,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 		String startTime = sdf.format(date);
 		int active = 1;
 		// Optional request fields:
-		String sponsor = "";
+		Boolean sponsored;
 
 		/*
 		 * 1. Check request body (validate) for proper format of fields:
@@ -83,7 +83,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 			location_long = Validate.location(json, "location_long");
 			location_desc = Validate.description(json, "location_desc");
 			description = Validate.description(json, "description");
-			sponsor = Validate.sponsor(json);
+			sponsored = Validate.sponsored(json);
 			class_id = Validate.class_id(path);
 		} catch (Exception400 e400) {
 			logger.log(e400.getMessage());
@@ -132,7 +132,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 
 			String insertSession = "INSERT INTO sessions VALUES ('" + session_id + "', '" 
 						+ user_id + "', " + duration + ", '" + location_desc + "', '" 
-						+ description + "', '" + sponsor + "', " + location_lat.floatValue() 
+						+ description + "', '" + sponsored.toString() + "', " + location_lat.floatValue() 
 						+ ", " + location_long.floatValue() + ", '" + startTime + "')";
 			Statement statement = con.createStatement();
 			statement.execute(insertSession);
@@ -221,7 +221,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 	}
 	
 	private boolean classIDExists(String class_id, Connection dbcon) throws SQLException {
-		String getClass = "SELECT class_id FROM classes WHERE class_id'"+class_id+"'";
+		String getClass = "SELECT class_id FROM classes WHERE class_id='"+class_id+"'";
 		Statement statement = dbcon.createStatement();
 		ResultSet result = statement.executeQuery(getClass);
 		if (result.next()) {

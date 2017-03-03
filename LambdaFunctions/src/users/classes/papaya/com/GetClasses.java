@@ -15,6 +15,7 @@ import java.util.Map;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.amazonaws.services.stepfunctions.builder.states.NextStateTransition;
 
 import utils.papaya.com.AuthServiceType;
 import utils.papaya.com.Authentication;
@@ -42,11 +43,10 @@ public class GetClasses implements RequestHandler<Map<String, Object>, Map<Strin
 		
 		this.context = context;
 		this.logger = context.getLogger();
-		Map<String, Object> papaya_json;
 		Map<String, Object> response = new HashMap<String, Object>();
 		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required request fields:
-		String user_id = "", authentication_key = "", service = "", class_id = "";
+		String user_id = "", authentication_key = "", class_id = "";
 		
 		/*
 		 * 1. Check request body (validate) for proper format of fields:
@@ -96,9 +96,9 @@ public class GetClasses implements RequestHandler<Map<String, Object>, Map<Strin
 			 */
 			
 			// TODO: Accidentally made class retriever instead of session retriever.
-			String getclasses = "SELECT user_class_id FROM users_classes WHERE class_user_id='"+user_id+"'";
+			String getclassids = "SELECT user_class_id FROM users_classes WHERE class_user_id='"+user_id+"'";
 			Statement statement = con.createStatement();
-			ResultSet result = statement.executeQuery(getclasses);
+			ResultSet result = statement.executeQuery(getclassids);
 			
 			ArrayList<String> class_ids = new ArrayList<String>();
 			while (result.next()) {
@@ -106,10 +106,27 @@ public class GetClasses implements RequestHandler<Map<String, Object>, Map<Strin
 			}
 			response.put("class_ids", class_ids.toArray());
 			
-			// TODO: Get other information about classes, like their names.
-			
 			result.close();
 			statement.close();
+
+			// TODO: Get other information about classes, like their names.
+			String getclassnames = "SELECT classname AND class_id FROM classes WHERE";
+			for (int i = 0; i < class_ids.size(); i++) {
+				if (i == class_ids.size() - 1)
+					getclassnames += " class_id='"+class_ids.get(i)+"'";
+				else
+					getclassnames += " class_id='"+class_ids.get(i)+"' OR";
+			}
+			
+			statement = con.createStatement();
+			result = statement.executeQuery(getclassnames);
+			ArrayList<String> class_names = new ArrayList<String>();
+			int index = 0;
+			while (result.next()) {
+				index = class_ids.indexOf(result.getString("class_id"));
+				class_names.set(index, result.getString("classname"));
+			}
+			response.put("classnames", class_names.toArray());
 
 		} catch (SQLException ex) {
 			// handle any errors

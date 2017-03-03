@@ -208,7 +208,7 @@ public class Validate
 		String description;
 		
 		if (!json.containsKey(fieldname)
-				|| !(json.get(fieldname) instanceof Double)
+				|| !(json.get(fieldname) instanceof String)
 				|| !((description = (String) json.get(fieldname)) != null)) {
 			
 			throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
@@ -221,20 +221,20 @@ public class Validate
 		return description;
 	}
 	
-	public static String sponsor(Map<String, Object> json) throws Exception400 {
-		String sponsor;
+	public static Boolean sponsored(Map<String, Object> json) throws Exception400 {
+		Boolean sponsored;
 		
-		if (!json.containsKey("sponsor")
-				|| !(json.get("sponsor") instanceof String)
-				|| !((sponsor = (String) json.get("sponsor")) != null)) {
+		if (!json.containsKey("sponsored")
+				|| !(json.get("sponsored") instanceof Boolean)
+				|| !((sponsored = (Boolean) json.get("sponsored")) != null)) {
 		
 		throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
 				generate400("sponsor does not exist.", "sponsor"));
-		} else if (sponsor.length() > 45) {
-			sponsor = sponsor.substring(0, 45);
-		}
+		} //else if (sponsor.length() > 45) {
+		//	sponsor = sponsor.substring(0, 45);
+		//}
 		
-		return sponsor;
+		return sponsored;
 	}
 	
 	public static String access_key(Map<String, Object> json) throws Exception400 {
