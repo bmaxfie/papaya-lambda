@@ -25,11 +25,11 @@ public class InsertClass implements RequestHandler<Map<String, Object>, String> 
 		context.getLogger().log("after connection established\n");
 		try {
 
-			String insertUser = "INSERT INTO classes VALUES (" + input.get("class_id") + ", " + "'"
+			String insertClass = "INSERT INTO classes VALUES (" + input.get("class_id") + ", " + "'"
 					+ input.get("classname") + "', " + input.get("user_access_key") + ", " + input.get("ta_access_key")
-					+ ", " + input.get("professor_access_key") + ", " + input.get("description") + ")";
+					+ ", " + input.get("professor_access_key") + ", '" + input.get("description") + "')";
 			Statement statement = con.createStatement();
-			statement.addBatch(insertUser);
+			statement.addBatch(insertClass);
 			statement.executeBatch();
 			statement.close();
 
