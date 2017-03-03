@@ -103,11 +103,42 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 			Statement statement = con.createStatement();
 			ResultSet result = statement.executeQuery(setauth);
 			
-			ArrayList<String> class_ids = new ArrayList<String>();
+			ArrayList<String> session_ids = new ArrayList<String>();
 			while (result.next()) {
-				class_ids.add(result.getString(0));
+				session_ids.add(result.getString("class_session_id"));
 			}
-			response.put("class_ids", class_ids);
+			response.put("session_ids", session_ids);
+			
+			result.close();
+			statement.close();
+			
+			String getsessions = "SELECT * FROM sessions WHERE";
+			for (int i = 0; i < session_ids.size(); i++)
+			{
+				if (i == session_ids.size() - 1)
+					getsessions += " session_id='"+session_ids.get(i)+"'";
+				else
+					getsessions += " session_id='"+session_ids.get(i)+"' OR";
+			}
+			logger.log(getsessions);
+			statement = con.createStatement();
+			result = statement.executeQuery(getsessions);
+			
+			ArrayList<Map<String, Object>> sessions = new ArrayList<Map<String, Object>>(); 
+			while (result.next()) {
+				Map<String, Object> session = new HashMap<String, Object>();
+				session.put("session_id", result.getString("session_id"));
+				session.put("host_id", result.getString("host_id"));
+				session.put("duration", result.getInt("duration"));
+				session.put("location_desc", result.getString("location_desc"));
+				session.put("description", result.getString("description"));
+				session.put("sponsor", result.getString("sponsor"));
+				session.put("location_lat", result.getFloat("location_lat"));
+				session.put("location_long", result.getFloat("location_long"));
+				session.put("start_time", result.getString("start_time"));
+				sessions.add(session);
+			}
+			response.put("sessions", sessions.toArray());
 			
 			result.close();
 			statement.close();
@@ -134,6 +165,7 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 		response.put("code_description", "OK");
 		response.put("user_id", user_id);
 		response.put("authentication_key", authentication_key);
+		response.put("class_id", class_id);
 		return response;
 	}
     

@@ -20,7 +20,7 @@ public class Validate
 				|| !(json.get(fieldname) instanceof Map)
 				|| !((path = (Map<String, Object>) json.get(fieldname)) != null)) {
 			throw new Exception400("Could not access params field of AWS transformed JSON.", 
-					generate400("params field, when looking for the class_id is not in AWS transformed JSON.", "class_id"));
+					generate400(fieldname + " field, when looking for a field in the path is not in AWS transformed JSON.", "class_id"));
 		}
 		else 
 			return path;

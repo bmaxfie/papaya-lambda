@@ -110,23 +110,26 @@ public class GetClasses implements RequestHandler<Map<String, Object>, Map<Strin
 			statement.close();
 
 			// TODO: Get other information about classes, like their names.
-			String getclassnames = "SELECT classname AND class_id FROM classes WHERE";
+			String getclassnames = "SELECT * FROM classes WHERE";
 			for (int i = 0; i < class_ids.size(); i++) {
 				if (i == class_ids.size() - 1)
 					getclassnames += " class_id='"+class_ids.get(i)+"'";
 				else
 					getclassnames += " class_id='"+class_ids.get(i)+"' OR";
 			}
+			logger.log(getclassnames);
 			
 			statement = con.createStatement();
 			result = statement.executeQuery(getclassnames);
-			ArrayList<String> class_names = new ArrayList<String>();
+			logger.log("class_ids size: " + class_ids.size() + "\n");
+			String[] class_names = new String[class_ids.size()];
 			int index = 0;
 			while (result.next()) {
 				index = class_ids.indexOf(result.getString("class_id"));
-				class_names.set(index, result.getString("classname"));
+				logger.log(index + "\n");
+				class_names[index] = result.getString("classname");
 			}
-			response.put("classnames", class_names.toArray());
+			response.put("classnames", class_names);
 
 		} catch (SQLException ex) {
 			// handle any errors
