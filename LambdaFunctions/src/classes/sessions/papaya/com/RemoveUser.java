@@ -119,12 +119,17 @@ public class RemoveUser implements RequestHandler<Map<String, Object>, Map<Strin
 			
 			//TODO need to check if current_session_id matches a session_id in the sessions or user_sessions table?
 			
-			//removes the user-session pair from the users-sessions table
-			String removeUser = "DELETE FROM users_sessions WHERE session_user_id='" + user_id + "' AND user_session_id='" + current_session_id + "'";
+			String removeUser = "UPDATE users_sessions SET active=0 WHERE session_user_id='" + user_id + "' AND user_session_id='" + current_session_id + "'";
 			statement = con.createStatement();
 			statement.execute(removeUser);
 			statement.close();
-			
+		
+//			//removes the user-session pair from the users-sessions table
+//			String removeUser = "DELETE FROM users_sessions WHERE session_user_id='" + user_id + "' AND user_session_id='" + current_session_id + "'";
+//			statement = con.createStatement();
+//			statement.execute(removeUser);
+//			statement.close();
+//			
 			//sets the current session of the user back to nothing as they are no longer in a session
 			String updateUser = "UPDATE users SET current_session_id='' WHERE user_id='" + user_id + "'";
 			statement = con.createStatement();
