@@ -174,6 +174,39 @@ public class Validate
 		return user_id;
 	}
 	
+	//used in validating the user_id of receiving friend
+	public static String user_id2(Map<String, Object> json) throws Exception400 {
+		String user_id2;
+		
+		if (!json.containsKey("user_id2")
+				|| !(json.get("user_id2") instanceof String)
+				|| !((user_id2 = (String) json.get("user_id2")) != null)) {
+		
+		throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+				generate400("user_id2 does not exist.", "user_id2"));
+		} else if (user_id2.length() > 45) {
+			user_id2 = user_id2.substring(0, 45);
+		}
+		
+		return user_id2;
+	}
+	
+	public static String session_id(Map<String, Object> json) throws Exception400 {
+		String session_id;
+		
+		if (!json.containsKey("session_id")
+				|| !(json.get("session_id") instanceof String)
+				|| !((session_id = (String) json.get("session_id")) != null)) {
+		
+		throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+				generate400("session_id does not exist.", "session_id"));
+		} else if (session_id.length() > 45) {
+			session_id = session_id.substring(0, 45);
+		}
+		
+		return session_id;
+	}
+	
 	public static int duration(Map<String, Object> json) throws Exception400 {
 		Integer duration;
 		
