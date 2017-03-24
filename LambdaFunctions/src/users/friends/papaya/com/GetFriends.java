@@ -114,9 +114,16 @@ public class GetFriends implements RequestHandler<Map<String, Object>, Map<Strin
 			 * ON (friendId.friend_receiver_id=users.user_id);
 			 */
 			
-			String getclassids = "SELECT user_class_id FROM users_classes WHERE class_user_id='"+user_id+"'";
+			String getfriends = "select users.username from "
+					+ "users inner join "
+					+ "("
+							+ "select friend_receiver_id from friends WHERE confirmed=1 AND friend_sender_id='"+ user_id +"'"
+							+ "union"
+							+ "select friend_sender_id from friends WHERE confirmed=1 AND friend_receiver_id='"+user_id+"'"
+					+ ") friendId"
+					+ "ON (friendId.friend_receiver_id=users.user_id);";
 			Statement statement = con.createStatement();
-			ResultSet result = statement.executeQuery(getclassids);
+			ResultSet result = statement.executeQuery(getfriends);
 			
 			ArrayList<String> class_ids = new ArrayList<String>();
 			while (result.next()) {
