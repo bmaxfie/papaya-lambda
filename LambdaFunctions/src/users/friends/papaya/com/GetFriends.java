@@ -45,13 +45,14 @@ public class GetFriends implements RequestHandler<Map<String, Object>, Map<Strin
 		this.logger = context.getLogger();
 		Map<String, Object> response = new HashMap<String, Object>();
 		AuthServiceType service_type = AuthServiceType.NONE;
+		Map<String, Object> json, path;
 		// Required request fields:
 		String user_id = "", authentication_key = "";
 		
 		/*
 		 * 1. Check request body (validate) for proper format of fields:
 		 * 		
-		 * 		fields must exist in string URL parameters:
+		 * 		fields must exist in string path parameters:
 		 * 			user_id
 		 * 			service
 		 * 			authentication_key
@@ -65,6 +66,8 @@ public class GetFriends implements RequestHandler<Map<String, Object>, Map<Strin
 			// Find Paths:
 			querystring = Validate.field(input, "params");
 			querystring = Validate.field(querystring, "querystring");
+			
+
 			
 			// 1. validate 'user_id'
 			user_id = Validate.user_id(querystring);
@@ -104,10 +107,10 @@ public class GetFriends implements RequestHandler<Map<String, Object>, Map<Strin
 			String getfriends = "select users.username from "
 					+ "users inner join "
 					+ "("
-							+ "select friend_receiver_id from friends WHERE confirmed=1 AND friend_sender_id='"+ user_id +"'"
-							+ "union"
+							+ "select friend_receiver_id from friends WHERE confirmed=1 AND friend_sender_id='"+ user_id +"' "
+							+ "union "
 							+ "select friend_sender_id from friends WHERE confirmed=1 AND friend_receiver_id='"+user_id+"'"
-					+ ") friendId"
+					+ ") friendId "
 					+ "ON (friendId.friend_receiver_id=users.user_id);";
 			Statement statement = con.createStatement();
 			ResultSet result = statement.executeQuery(getfriends);
