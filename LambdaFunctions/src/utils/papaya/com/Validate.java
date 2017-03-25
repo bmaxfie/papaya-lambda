@@ -194,12 +194,12 @@ public class Validate
 	public static String session_id(Map<String, Object> json) throws Exception400 {
 		String session_id;
 		
-		if (!json.containsKey("session_id")
-				|| !(json.get("session_id") instanceof String)
-				|| !((session_id = (String) json.get("session_id")) != null)) {
+		if (!json.containsKey("session-id")
+				|| !(json.get("session-id") instanceof String)
+				|| !((session_id = (String) json.get("session-id")) != null)) {
 		
 		throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
-				generate400("session_id does not exist.", "session_id"));
+				generate400("session-id does not exist.", "session-id"));
 		} else if (session_id.length() > 45) {
 			session_id = session_id.substring(0, 45);
 		}
