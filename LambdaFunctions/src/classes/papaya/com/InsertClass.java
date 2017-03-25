@@ -112,7 +112,7 @@ public class InsertClass implements RequestHandler<Map<String, Object>, Map<Stri
 				return generate500("generateUID() failed 3 times (professor_access_key). Try recalling.");
 			}
 			
-			String insertUser = "INSERT INTO classes VALUES ('" + class_id + "', " + "'"
+			String insertClass = "INSERT INTO classes VALUES ('" + class_id + "', " + "'"
 					+ classname + "', '" + student_access_key + "', '" + ta_access_key
 					+ "', '" + professor_access_key + "', '" + description + "')";
 			
