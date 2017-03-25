@@ -53,8 +53,8 @@ public class GetFriends implements RequestHandler<Map<String, Object>, Map<Strin
 		 * 		
 		 * 		fields must exist in string URL parameters:
 		 * 			user_id
-		 * 			authentication_key
 		 * 			service
+		 * 			authentication_key
 		 * 
 		 * 		// TODO: Check for SQL INJECTION!
 		 */
@@ -94,24 +94,11 @@ public class GetFriends implements RequestHandler<Map<String, Object>, Map<Strin
 			 * 
 			 * 		1. Update authentication_key for user_id.
 			 */
-			
-			// TODO: Accidentally made class retriever instead of session retriever.
-			
+						
 			/*
-			 * TODO: NEW SQL BELOW
-			 * TODO: only returns the user_id not the username
 			 * 
-			 * SQL command:
+			 * SQL command: returns a list of friends for user: user_id
 			 * 
-			 * select users.username from 
-			 * users
-			 * inner join 
-			 * (
-			 * 		select friend_receiver_id from friends WHERE confirmed=1 AND friend_sender_id='A'
-			 * 		union
-			 * 		select friend_sender_id from friends WHERE confirmed=1 AND friend_receiver_id='A'
-			 * ) friendId
-			 * ON (friendId.friend_receiver_id=users.user_id);
 			 */
 			
 			String getfriends = "select users.username from "
@@ -125,36 +112,15 @@ public class GetFriends implements RequestHandler<Map<String, Object>, Map<Strin
 			Statement statement = con.createStatement();
 			ResultSet result = statement.executeQuery(getfriends);
 			
-			ArrayList<String> class_ids = new ArrayList<String>();
+			ArrayList<String> friend_usernames = new ArrayList<String>();
 			while (result.next()) {
-				class_ids.add(result.getString(1));
+				friend_usernames.add(result.getString(1));
 			}
-			response.put("class_ids", class_ids.toArray());
+			response.put("friends", friend_usernames.toArray());
 			
 			result.close();
 			statement.close();
 
-			// TODO: Get other information about classes, like their names.
-			String getclassnames = "SELECT * FROM classes WHERE";
-			for (int i = 0; i < class_ids.size(); i++) {
-				if (i == class_ids.size() - 1)
-					getclassnames += " class_id='"+class_ids.get(i)+"'";
-				else
-					getclassnames += " class_id='"+class_ids.get(i)+"' OR";
-			}
-			logger.log(getclassnames);
-			
-			statement = con.createStatement();
-			result = statement.executeQuery(getclassnames);
-			logger.log("class_ids size: " + class_ids.size() + "\n");
-			String[] class_names = new String[class_ids.size()];
-			int index = 0;
-			while (result.next()) {
-				index = class_ids.indexOf(result.getString("class_id"));
-				logger.log(index + "\n");
-				class_names[index] = result.getString("classname");
-			}
-			response.put("classnames", class_names);
 
 		} catch (SQLException ex) {
 			// handle any errors
