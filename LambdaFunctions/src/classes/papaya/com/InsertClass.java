@@ -22,6 +22,19 @@ import static utils.papaya.com.ResponseGenerator.*;
 
 
 public class InsertClass implements RequestHandler<Map<String, Object>, Map<String, Object>> {
+	
+	/**
+	 * Steps to implement a generic papaya API Lambda Function:
+	 * 
+	 * 1. Check request body (validate) for proper format of fields. 2. Ensure
+	 * request is authentic from authentication service. 3a. Get any data from
+	 * tables to complete request. 3b. Change tables as necessary for particular
+	 * request.
+	 * 
+	 * For description of the API requirements, seek the API Documentation in
+	 * developers folder.
+	 */
+	
 	private Context context;
 	private LambdaLogger logger;
 
