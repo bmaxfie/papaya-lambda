@@ -154,6 +154,7 @@ public class Validate
 					generate400("class-id does not exist.", "class-id"));
 		} else if (class_id.length() > 45)
 			class_id = class_id.substring(0, 45);
+		class_id = class_id.replaceAll("%2F", "/");
 		
 		return class_id;
 	}
@@ -203,6 +204,7 @@ public class Validate
 		} else if (session_id.length() > 45) {
 			session_id = session_id.substring(0, 45);
 		}
+		session_id = session_id.replaceAll("%2F", "/");
 		
 		return session_id;
 	}
