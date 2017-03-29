@@ -101,15 +101,15 @@ public class GetSessionUsers implements RequestHandler<Map<String, Object>, Map<
 			Statement statement = con.createStatement();
 			ResultSet result = statement.executeQuery(getUserInfo);
 			
-			ArrayList<String> user_ids = new ArrayList<String>();
-			ArrayList<String> usernames = new ArrayList<String>();
-			
+			ArrayList<Map<String, Object>> users = new ArrayList<Map<String, Object>>();
+
 			while (result.next()) {
-				user_ids.add(result.getString("user_id"));
-				usernames.add(result.getString("username"));
+				Map<String, Object> user_container = new HashMap<String, Object>();
+				user_container.put("user_id", result.getString("user_id"));
+				user_container.put("username", result.getString("username"));
+				users.add(user_container);
 			}
-			response.put("user_ids", user_ids.toArray());
-			response.put("usernames", usernames.toArray());
+			response.put("users", users);
 			result.close();
 			statement.close();
 
