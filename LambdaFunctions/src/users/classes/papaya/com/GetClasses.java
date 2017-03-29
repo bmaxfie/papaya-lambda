@@ -104,7 +104,7 @@ public class GetClasses implements RequestHandler<Map<String, Object>, Map<Strin
 				Map<String, Object> c = new HashMap<String, Object>();
 				c.put("class_id", result.getString("class_id"));
 				c.put("classname", result.getString("classname"));
-				c.put("descriptions", result.getString("descriptions"));
+				c.put("descriptions", result.getString("description"));
 				classes.add(c);
 			}
 			response.put("classes", classes);

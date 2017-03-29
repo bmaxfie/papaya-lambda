@@ -101,12 +101,20 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 			Statement statement = con.createStatement();
 			
 			//get the class_id from database
-			String get_class_id = "SELECT class_id FROM classes WHERE student_access_key='" + access_key + "' OR ta_access_key='" + access_key + "' OR professor_access_key='" + access_key +"'";
+			String get_class_id = "SELECT class_id, student_access_key, ta_access_key, professor_access_key FROM classes WHERE student_access_key='" + access_key + "' OR ta_access_key='" + access_key + "' OR professor_access_key='" + access_key +"'";
 			ResultSet class_id_rs = statement.executeQuery(get_class_id);
 			String class_id = "";
 			if (class_id_rs.next()) {
-				//if it is returned from the databse, it should be formatted correctly and not null
+				if (class_id_rs.isLast()) {
+					logger.log("ERROR: 500 Internal Server Error - There are multiple rows with same access key.");
+					return generate500("There are multiple rows with the same access key.");
+				}
+				
+				// if it is returned from the database, it should be formatted correctly and not null
 				class_id = class_id_rs.getString("class_id");
+				String student_access_key = class_id_rs.getString("student_access_key");
+				String ta_access_key = class_id_rs.getString("ta_access_key");
+				String professor_access_key = class_id_rs.getString("professor_access_key");
 			}
 			else {
 				logger.log("ERROR: 400 Bad Request - Returned to client. class_id does not exist from given access_key.");
