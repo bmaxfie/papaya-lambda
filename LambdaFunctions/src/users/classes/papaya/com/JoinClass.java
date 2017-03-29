@@ -109,13 +109,13 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 				class_id = class_id_rs.getString("class_id");
 			}
 			else {
-				logger.log("ERROR: 400 Bad Request - Returned to client. class_id does not exist or is invalid.");
-				return generate400("class_id does not exist or is invalid", "class_id");
+				logger.log("ERROR: 400 Bad Request - Returned to client. class_id does not exist from given access_key.");
+				return generate400("class_id does not exist, probably from bad access_key.", "class_id");
 			}
 			
 			//get the user_role
 			int user_role = 0;
-			String getAuthKey = "SELECT student_access_key, ta_access_key, professor_access_key FROM classes WHERE class_id=" + class_id;
+			String getAuthKey = "SELECT student_access_key, ta_access_key, professor_access_key FROM classes WHERE class_id='" + class_id + "'";
 			ResultSet getAuthKeyRS = statement.executeQuery(getAuthKey);
 			if (getAuthKeyRS.next()) {
 				String student = getAuthKeyRS.getString("student_access_key");
