@@ -109,7 +109,7 @@ public class GetSessionUsers implements RequestHandler<Map<String, Object>, Map<
 				user_container.put("username", result.getString("username"));
 				users.add(user_container);
 			}
-			response.put("users", users);
+			response.put("users", users.toArray());
 			result.close();
 			statement.close();
 
