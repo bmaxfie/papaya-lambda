@@ -103,10 +103,12 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 			//get the class_id from database
 			String get_class_id = "SELECT class_id, student_access_key, ta_access_key, professor_access_key FROM classes WHERE student_access_key='" + access_key + "' OR ta_access_key='" + access_key + "' OR professor_access_key='" + access_key +"'";
 			ResultSet class_id_rs = statement.executeQuery(get_class_id);
+			logger.log("query = " + get_class_id + "\n");
 			String class_id = "";
+			int user_role = -1;
 			if (class_id_rs.next()) {
-				if (class_id_rs.isLast()) {
-					logger.log("ERROR: 500 Internal Server Error - There are multiple rows with same access key.");
+				if (!class_id_rs.isLast()) {
+					logger.log("\nERROR: 500 Internal Server Error - There are multiple rows with same access key.\n");
 					return generate500("There are multiple rows with the same access key.");
 				}
 				
@@ -115,33 +117,23 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 				String student_access_key = class_id_rs.getString("student_access_key");
 				String ta_access_key = class_id_rs.getString("ta_access_key");
 				String professor_access_key = class_id_rs.getString("professor_access_key");
+				if (access_key.equals(professor_access_key))
+					user_role = UserRole.value(UserRole.PROFESSOR);
+				else if (access_key.equals(ta_access_key))
+					user_role = UserRole.value(UserRole.TA);
+				else if (access_key.equals(student_access_key))
+					user_role = UserRole.value(UserRole.STUDENT);
+				else {
+					logger.log("ERROR: 400 Bad Request - Returned to client. user_role is not a value [1-3].");
+					return generate400("user_role is not a value [1-3].", "user_role");
+				}
 			}
 			else {
 				logger.log("ERROR: 400 Bad Request - Returned to client. class_id does not exist from given access_key.");
 				return generate400("class_id does not exist, probably from bad access_key.", "class_id");
 			}
 			
-			//get the user_role
-			int user_role = 0;
-			String getAuthKey = "SELECT student_access_key, ta_access_key, professor_access_key FROM classes WHERE class_id='" + class_id + "'";
-			ResultSet getAuthKeyRS = statement.executeQuery(getAuthKey);
-			if (getAuthKeyRS.next()) {
-				String student = getAuthKeyRS.getString("student_access_key");
-				String ta = getAuthKeyRS.getString("ta_access_key");
-				String prof = getAuthKeyRS.getString("professor_access_key");
-				if (student.equals(access_key))
-					user_role = UserRole.value(UserRole.STUDENT);
-				else if (ta.equals(access_key))
-					user_role = UserRole.value(UserRole.TA);
-				else if (prof.equals(access_key))
-					user_role = UserRole.value(UserRole.PROFESSOR);
-				else {
-					logger.log("ERROR: 400 Bad Request - Returned to client. user_role is not a value [1-3].");
-					return generate400("user_role is not a value [1-3].", "user_role");
-				}
-			}
-			
-			
+			// Insert new row into users_classes
 			String joinClass = "INSERT INTO users_classes VALUES (" + user_role + ", '"
 					+ user_id + "', '" + class_id + "')";
 			

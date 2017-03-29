@@ -104,7 +104,7 @@ public class GetFriends implements RequestHandler<Map<String, Object>, Map<Strin
 			 * 
 			 */
 			
-			String getfriends = "select users.username from "
+			String getfriends = "select users.username, users.user_id from "
 					+ "users inner join "
 					+ "("
 							+ "select friend_receiver_id from friends WHERE confirmed=1 AND friend_sender_id='"+ user_id +"' "
@@ -115,11 +115,14 @@ public class GetFriends implements RequestHandler<Map<String, Object>, Map<Strin
 			Statement statement = con.createStatement();
 			ResultSet result = statement.executeQuery(getfriends);
 			
-			ArrayList<String> friend_usernames = new ArrayList<String>();
+			ArrayList<Map<String, Object>> friends = new ArrayList<Map<String, Object>>();
 			while (result.next()) {
-				friend_usernames.add(result.getString(1));
+				Map<String, Object> friend = new HashMap<String, Object>();
+				friend.put("user_id", result.getString("user_id"));
+				friend.put("username", result.getString("username"));
+				friends.add(friend);
 			}
-			response.put("friends", friend_usernames.toArray());
+			response.put("friends", friends.toArray());
 			
 			result.close();
 			statement.close();
