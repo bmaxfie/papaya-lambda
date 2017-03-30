@@ -116,7 +116,7 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 					return generate500("More than one user was returned for username and client.");
 				}
 				
-				user_id = result.getString(1);
+				user_id = result.getString("user_id");
 				result.close();
 				statement.close();
 			}
