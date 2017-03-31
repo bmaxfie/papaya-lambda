@@ -1,4 +1,4 @@
-package classes.sessions.papaya.com;
+package users.papaya.com;
 
 import static utils.papaya.com.ResponseGenerator.generate500;
 
@@ -19,8 +19,7 @@ import utils.papaya.com.AuthServiceType;
 import utils.papaya.com.Exception400;
 import utils.papaya.com.Validate;
 
-public class RetrieveClassSessions implements RequestHandler <Map<String, Object>, Map<String, Object>>{
-
+public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<String, Object>> {
 	/** Steps to implement a generic papaya API Lambda Function:
 	 * 
 	 * 	1.	Check request body (validate) for proper format of fields.
@@ -41,45 +40,40 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 		this.context = context;
 		this.logger = context.getLogger();
 		Map<String, Object> response = new HashMap<String, Object>();
+		ArrayList<Map<String, Object>> classes = new ArrayList<Map<String, Object>>();
 		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required request fields:
-		String user_id = "", authentication_key = "", service = "", class_id = "";
+		String user_id = "", authentication_key = "", class_id = "";
 		
 		/*
 		 * 1. Check request body (validate) for proper format of fields:
 		 * 		
-		 * 		fields must exist in querystring:
+		 * 		fields must exist in string URL parameters:
 		 * 			user_id
 		 * 			authentication_key
 		 * 			service
-		 * 		
-		 * 		field from path, class_id from class/{id}/sessions
 		 * 
 		 * 		// TODO: Check for SQL INJECTION!
 		 */
 		
-		Map<String, Object> path;
-		Map<String, Object> querystrings;
 		
+		Map<String, Object> querystring;
 		try {
 			// Find Paths:
-			path = Validate.field(input, "params");
-			querystrings = Validate.field(path, "querystring");
-			path = Validate.field(path, "path");
+			querystring = Validate.field(input, "params");
+			querystring = Validate.field(querystring, "querystring");
 			
 			// 1. validate 'user_id'
-			user_id = Validate.user_id(querystrings);
+			user_id = Validate.user_id(querystring);
 			// 2. validate 'service' field is a recognizable type
-			service_type = Validate.service(querystrings);
+			service_type = Validate.service(querystring);
 			// 3. validate 'authentication_key' is of length allowed?
-			authentication_key = Validate.authentication_key(querystrings, service_type);
-			// 4. validate the path parameter 'class_id'
-			class_id = Validate.class_id(path);
+			// TODO: Determine more strict intro rules
+			authentication_key = Validate.authentication_key(querystring, service_type);
 		} catch (Exception400 e400) {
 			logger.log(e400.getMessage());
 			return e400.getResponse();
 		}
-		
 		
 		/*
 		 * 2. Authentic authentication_key check:
@@ -97,31 +91,47 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 			 * 
 			 * 		1. Update authentication_key for user_id.
 			 */
+			String getClassInfo = "SELECT class_id, classname, description FROM classes AS c, users_classes AS uc WHERE uc.class_user_id='" + user_id + "' AND c.class_id=uc.user_class_id";
+			Statement classStatement = con.createStatement();
+			ResultSet classResult = classStatement.executeQuery(getClassInfo);
 			
-			// TODO: Accidentally made class retriever instead of session retriever.
-			String setauth = "SELECT * FROM sessions AS s, classes_sessions AS c_s WHERE c_s.session_class_id='"+class_id+"' AND active=1 AND s.session_id=c_s.class_session_id";
-			Statement statement = con.createStatement();
-			ResultSet result = statement.executeQuery(setauth);
-			
-			ArrayList<Map<String, Object>> sessions = new ArrayList<Map<String, Object>>();
-			while (result.next()) {
-				Map<String, Object> session = new HashMap<String, Object>();
-				session.put("session_id", result.getString("session_id"));
-				session.put("host_id", result.getString("host_id"));
-				session.put("duration", result.getInt("duration"));
-				session.put("location_desc", result.getString("location_desc"));
-				session.put("description", result.getString("description"));
-				session.put("sponsored", result.getBoolean("sponsor"));
-				session.put("location_lat", result.getFloat("location_lat"));
-				session.put("location_long", result.getFloat("location_long"));
-				session.put("start_time", result.getString("start_time"));
-				sessions.add(session);
+			while (classResult.next()) {
+				Map<String, Object> c = new HashMap<String, Object>();
+				c.put("class_id", classResult.getString("class_id"));
+				c.put("classname", classResult.getString("classname"));
+				c.put("descriptions", classResult.getString("description"));
+				
+				logger.log("Found class: " + classResult.getString("class_id") + "\n");
+				
+				String getSessionInfo = "SELECT * FROM sessions AS s, classes_sessions AS c_s WHERE c_s.session_class_id='"+class_id+"' AND active=1 AND s.session_id=c_s.class_session_id";
+				Statement sessionStatement = con.createStatement();
+				ResultSet sessionResult = sessionStatement.executeQuery(getSessionInfo);
+				
+				ArrayList<Map<String, Object>> sessions = new ArrayList<Map<String, Object>>();
+				while (sessionResult.next()) {
+					Map<String, Object> s = new HashMap<String, Object>();
+					s.put("session_id", sessionResult.getString("session_id"));
+					s.put("host_id", sessionResult.getString("host_id"));
+					s.put("duration", sessionResult.getInt("duration"));
+					s.put("location_desc", sessionResult.getString("location_desc"));
+					s.put("description", sessionResult.getString("description"));
+					s.put("sponsored", sessionResult.getBoolean("sponsor"));
+					s.put("location_lat", sessionResult.getFloat("location_lat"));
+					s.put("location_long", sessionResult.getFloat("location_long"));
+					s.put("start_time", sessionResult.getString("start_time"));
+					
+					sessions.add(s);
+				}
+				c.put("sessions", sessions);
+				classes.add(c);
+				
+				sessionResult.close();
+				sessionStatement.close();
 			}
-			response.put("sessions", sessions);
+			response.put("classes", classes);
 			
-			result.close();
-			statement.close();
-			
+			classResult.close();
+			classStatement.close();
 
 		} catch (SQLException ex) {
 			// handle any errors
@@ -145,7 +155,6 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 		response.put("code_description", "OK");
 		response.put("user_id", user_id);
 		response.put("authentication_key", authentication_key);
-		response.put("class_id", class_id);
 		return response;
 	}
     
@@ -173,5 +182,5 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 		}
 		return null;
 	}
-    	
+
 }

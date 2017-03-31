@@ -22,7 +22,7 @@ import utils.papaya.com.Authentication;
 import utils.papaya.com.Exception400;
 import utils.papaya.com.Validate;
 
-public class GetClasses implements RequestHandler<Map<String, Object>, Map<String, Object>>{
+public class GetClasses implements RequestHandler<Map<String, Object>, Map<String, Object>> {
 
 	/** Steps to implement a generic papaya API Lambda Function:
 	 * 
