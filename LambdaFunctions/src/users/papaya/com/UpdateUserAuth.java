@@ -115,22 +115,18 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 					logger.log("ERROR: 500 Internal Server Error - Returned to client. More than one user was returned for username and email.");
 					return generate500("More than one user was returned for username and client.");
 				}
-				
+
 				user_id = result.getString("user_id");
+				
 				result.close();
 				statement.close();
 			}
-			
 			/*
 			 * 3b. Change tables as necessary for particular request.
 			 * 
 			 * 		1. Update authentication_key for user_id.
 			 */
 			
-			String setauth = "UPDATE users SET authentication_key='"+authentication_key+"' WHERE user_id='"+user_id+"'";
-			Statement statement = con.createStatement();
-			statement.executeUpdate(setauth);
-			statement.close();
 
 		} catch (SQLException ex) {
 			// handle any errors
@@ -153,7 +149,6 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 		response.put("code", 200);
 		response.put("code_description", "OK");
 		response.put("user_id", user_id);
-		response.put("authentication_key", authentication_key);
 		return response;
 	}
     
