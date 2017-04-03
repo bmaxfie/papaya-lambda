@@ -72,7 +72,7 @@ public class AddFriend implements RequestHandler<Map<String, Object>, Map<String
 			 * if friends entry exists already, update confirmed to true/1
 			 * otherwise add entry to the table with confirmed=false/0
 			 */
-			String entryExistsQuery = "SELECT confirmed FROM friends "
+			String entryExistsQuery = "SELECT friend_sender_id FROM friends "
 					+ "WHERE ( friend_sender_id='" + user_id + "' AND friend_receiver_id='" + user_id2 + "') "
 					+ "OR ( friend_sender_id='" + user_id2 + "' AND friend_receiver_id='" + user_id + "')";
 			Statement statement = con.createStatement();
@@ -87,13 +87,9 @@ public class AddFriend implements RequestHandler<Map<String, Object>, Map<String
 			entryExistsResult.close();
 			statement.close();
 			
-			String updateConfirmation = "UPDATE friends SET confirmed=" + 1 + " "
-					+ "WHERE friend_sender_id='" + user_id2 + "' AND friend_receiver_id='" + user_id + "'";
-			String addFriend = "INSERT INTO friends VALUES ( " + 0 + ", '" + user_id + "', '" + user_id2 + "')";
+			String addFriend = "INSERT INTO friends VALUES ('" + user_id + "', '" + user_id2 + "')";
 			statement = con.createStatement();
-			if(entryExists) {
-				statement.execute(updateConfirmation);
-			} else {
+			if(!entryExists) {
 				statement.execute(addFriend);
 			}
 			statement.close();
