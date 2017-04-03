@@ -107,9 +107,9 @@ public class GetFriends implements RequestHandler<Map<String, Object>, Map<Strin
 			String getfriends = "select users.username, users.user_id from "
 					+ "users inner join "
 					+ "("
-							+ "select friend_receiver_id from friends WHERE confirmed=1 AND friend_sender_id='"+ user_id +"' "
+							+ "select friend_receiver_id from friends WHERE friend_sender_id='"+ user_id +"' "
 							+ "union "
-							+ "select friend_sender_id from friends WHERE confirmed=1 AND friend_receiver_id='"+user_id+"'"
+							+ "select friend_sender_id from friends WHERE friend_receiver_id='"+user_id+"'"
 					+ ") friendId "
 					+ "ON (friendId.friend_receiver_id=users.user_id);";
 			Statement statement = con.createStatement();
