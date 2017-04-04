@@ -112,7 +112,21 @@ public class GetSessionUsers implements RequestHandler<Map<String, Object>, Map<
 			response.put("users", users.toArray());
 			result.close();
 			statement.close();
-
+			
+			String getSessionDescriptions = "SELECT description, location_desc FROM sessions WHERE session_id='" + session_id + "'";
+			statement = con.createStatement();
+			result = statement.executeQuery(getSessionDescriptions);
+			String description = "";
+			String location_desc = "";
+			if(result.next()) {
+				description = result.getString("description");
+				location_desc = result.getString("location_desc");
+			}
+			result.close();
+			statement.close();
+			
+			response.put("description", description);
+			response.put("location_desc", location_desc);
 			
 
 		} catch (SQLException ex) {
