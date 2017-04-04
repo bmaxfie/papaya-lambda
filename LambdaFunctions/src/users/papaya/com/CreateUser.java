@@ -121,7 +121,7 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 			
 			String insertUser = "INSERT INTO users VALUES ('" + user_id + "', '"
 					+ username + "', " + phone + ", " + "'"
-					+ email + "', '" + authentication_key + "', '" + "')";
+					+ email + "', '" + "', '" + service_type.toString() + "')";
 			Statement statement = con.createStatement();
 			statement.addBatch(insertUser);
 			statement.executeBatch();

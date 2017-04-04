@@ -100,7 +100,7 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 			 * 		1. Get user_id if not supplied from API call.
 			 */
 			if (auth_option == 2) {
-				String getuser_id = "SELECT user_id FROM users WHERE username='"+username+"' AND email='"+email+"'";
+				String getuser_id = "SELECT user_id FROM users WHERE username='"+username+"' AND email='"+email+"' AND service='" + service_type.toString() + "'";
 				Statement statement = con.createStatement();
 				ResultSet result = statement.executeQuery(getuser_id);
 				if (!result.next()) {
