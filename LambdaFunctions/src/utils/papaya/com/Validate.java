@@ -76,11 +76,9 @@ public class Validate
 		}
 		
 		if (service_type == AuthServiceType.FACEBOOK 
-						&& (authentication_key.length() > Authentication.FACEBOOK_KEY_MAX_LEN
-								|| authentication_key.length() < Authentication.FACEBOOK_KEY_MIN_LEN)
+						&& authentication_key.length() < Authentication.FACEBOOK_KEY_MIN_LEN
 				|| service_type == AuthServiceType.GOOGLE
-						&& (authentication_key.length() > Authentication.GOOGLE_KEY_MAX_LEN
-								|| authentication_key.length() < Authentication.GOOGLE_KEY_MIN_LEN)) {
+						&& authentication_key.length() < Authentication.GOOGLE_KEY_MIN_LEN) {
 			
 			throw new Exception400("ERROR: 400 Bad Request - Returned to client. authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.", 
 					generate400("authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.", "authentication_key"));
