@@ -47,7 +47,7 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 		Map<String, Object> response = new HashMap<String, Object>();
 		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required request fields:
-		String user_id, authentication_key, service, access_key;
+		String user_id, authentication_key, service_user_id, service, access_key;
 		// Optional request fields:
 			//none
 		
@@ -74,6 +74,7 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 			// 3. validate 'authentication_key' is of length allowed?
 			// TODO: Determine more strict intro rules
 			authentication_key = Validate.authentication_key(json, service_type);
+			service_user_id = Validate.service_user_id(json, service_type);
 			// 4. validate 'access_key' is of right length
 			access_key = Validate.access_key(json);
 		} catch (Exception400 e400) {

@@ -48,7 +48,7 @@ public class RemoveUser implements RequestHandler<Map<String, Object>, Map<Strin
 		Map<String, Object> response = new HashMap<String, Object>();
 		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required fields:
-		String authentication_key, service;
+		String authentication_key, service_user_id, service;
 		String user_id = "";
 		String current_session_id = ""; //does not need to be passed in through json, obtained from sql
 
@@ -70,6 +70,7 @@ public class RemoveUser implements RequestHandler<Map<String, Object>, Map<Strin
 			user_id = Validate.user_id(json);
 			service_type = Validate.service(json);
 			authentication_key = Validate.authentication_key(json, service_type);
+			service_user_id = Validate.service_user_id(json, service_type);
 			
 		} catch (Exception400 e400) {
 			logger.log(e400.getMessage());

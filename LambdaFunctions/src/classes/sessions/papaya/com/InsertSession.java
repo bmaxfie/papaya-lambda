@@ -48,7 +48,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 		Map<String, Object> response = new HashMap<String, Object>();
 		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required fields:
-		String authentication_key, service;
+		String authentication_key, service_user_id, service;
 		String session_id, location_desc, description, class_id;
 		String user_id = "";
 		Integer duration;
@@ -78,6 +78,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 			user_id = Validate.user_id(json);
 			service_type = Validate.service(json);
 			authentication_key = Validate.authentication_key(json, service_type);
+			service_user_id = Validate.service_user_id(json, service_type);
 			duration = Validate.duration(json);
 			location_lat = Validate.location(json, "location_lat");
 			location_long = Validate.location(json, "location_long");

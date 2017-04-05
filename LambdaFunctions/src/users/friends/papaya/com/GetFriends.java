@@ -47,7 +47,7 @@ public class GetFriends implements RequestHandler<Map<String, Object>, Map<Strin
 		AuthServiceType service_type = AuthServiceType.NONE;
 		Map<String, Object> json, path;
 		// Required request fields:
-		String user_id = "", authentication_key = "";
+		String user_id = "", authentication_key = "", service_user_id = "";
 		
 		/*
 		 * 1. Check request body (validate) for proper format of fields:
@@ -76,6 +76,7 @@ public class GetFriends implements RequestHandler<Map<String, Object>, Map<Strin
 			// 3. validate 'authentication_key' is of length allowed?
 			// TODO: Determine more strict intro rules
 			authentication_key = Validate.authentication_key(querystring, service_type);
+			service_user_id = Validate.service_user_id(querystring, service_type);
 		} catch (Exception400 e400) {
 			logger.log(e400.getMessage());
 			return e400.getResponse();

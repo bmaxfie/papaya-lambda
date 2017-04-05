@@ -45,7 +45,7 @@ public class JoinSession implements RequestHandler<Map<String, Object>, Map<Stri
 		Map<String, Object> response = new HashMap<String, Object>();
 		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required request fields:
-		String user_id, authentication_key, service, session_id; //class_id, session_id passed in through path
+		String user_id, authentication_key, service_user_id, service, session_id; //class_id, session_id passed in through path
 		// Optional request fields:
 			//none
 		
@@ -73,6 +73,7 @@ public class JoinSession implements RequestHandler<Map<String, Object>, Map<Stri
 			service_type = Validate.service(json);
 			// 3. validate 'authentication_key' is of length allowed?
 			authentication_key = Validate.authentication_key(json, service_type);
+			service_user_id = Validate.service_user_id(json, service_type);
 			session_id = Validate.session_id(path);
 		} catch (Exception400 e400) {
 			logger.log(e400.getMessage());

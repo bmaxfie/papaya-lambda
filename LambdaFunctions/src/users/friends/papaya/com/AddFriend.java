@@ -34,7 +34,7 @@ public class AddFriend implements RequestHandler<Map<String, Object>, Map<String
 		AuthServiceType service_type = AuthServiceType.NONE;
 
 		// Required request fields for authentication:
-		String authentication_key;
+		String authentication_key, service_user_id;
 		String user_id = ""; //user_id of sender of friend request/confirmation
 		String user_id2 = ""; //user_id of receiver of friend request/confirmation
 
@@ -48,6 +48,7 @@ public class AddFriend implements RequestHandler<Map<String, Object>, Map<String
 			user_id2 = Validate.user_id2(json);
 			service_type = Validate.service(json);
 			authentication_key = Validate.authentication_key(json, service_type);
+			service_user_id = Validate.service_user_id(json, service_type);
 			
 		} catch (Exception400 e400) {
 			logger.log(e400.getMessage());

@@ -43,7 +43,7 @@ public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<
 		ArrayList<Map<String, Object>> classes = new ArrayList<Map<String, Object>>();
 		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required request fields:
-		String user_id = "", authentication_key = "", class_id = "";
+		String user_id = "", authentication_key = "", class_id = "", service_user_id = "";
 		
 		/*
 		 * 1. Check request body (validate) for proper format of fields:
@@ -70,6 +70,7 @@ public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<
 			// 3. validate 'authentication_key' is of length allowed?
 			// TODO: Determine more strict intro rules
 			authentication_key = Validate.authentication_key(querystring, service_type);
+			service_user_id = Validate.service_user_id(querystring, service_type);
 		} catch (Exception400 e400) {
 			logger.log(e400.getMessage());
 			return e400.getResponse();

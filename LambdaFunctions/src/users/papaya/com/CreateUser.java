@@ -46,7 +46,7 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 		AuthServiceType service_type = AuthServiceType.NONE;
 		String user_id = "";
 		// Required request fields:
-		String username, authentication_key;
+		String username, authentication_key, service_user_id;
 		// Optional request fields:
 		long phone = 0;
 		String email = null;
@@ -73,6 +73,7 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 			username = Validate.username(json);
 			service_type = Validate.service(json);
 			authentication_key = Validate.authentication_key(json, service_type);
+			service_user_id = Validate.service_user_id(json, service_type);
 		} catch (Exception400 e400) {
 			logger.log(e400.getMessage());
 			return e400.getResponse();
