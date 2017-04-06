@@ -1,5 +1,7 @@
 #Lambda Function Project Metadata
-#Sat Mar 25 13:25:42 EDT 2017
-lastDeploymentFunctionName=GetFriends
+#Wed Apr 05 02:46:46 EDT 2017
+lastInvokeShowLiveLog=true
+lastDeploymentFunctionName=LoadAllSessions
 lastDeploymentBucketName=papaya-lambda
 lastDeploymentEndpoint=https\://lambda.us-west-2.amazonaws.com/
+lastInvokeInput={\n"body-json" \: {},\n"params" \: {\n"path" \: {\n    }\n    ,"querystring" \: {\n        \t\t"user_id" \: "GXuFK5J9RLm1SgueLKJCFg\=\="\n        ,        "service" \: "GOOGLE"\n        ,        "authentication_key" \: "0123456789012345678901234567890123456789",\n\t\t"service_user_id" \: "0123456789012345678901234567890123456789"\n            }\n    }\n}
