@@ -65,7 +65,7 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 		
 		try {
 			// Find paths:
-			json = Validate.field(input, "body-json");
+			json = Validate.field(input, "body_json");
 			
 			// 1. validate 'user_id' field is of length allowed in database, otherwise truncate.
 			user_id = Validate.user_id(json);

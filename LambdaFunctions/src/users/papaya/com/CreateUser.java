@@ -67,7 +67,7 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 		
 		try {
 			// Find Path:
-			json = Validate.field(input, "body-json");
+			json = Validate.field(input, "body_json");
 			
 			// Validate required fields:
 			username = Validate.username(json);

@@ -63,7 +63,7 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 		
 		try {
 			// Find path:
-			json = Validate.field(input, "body-json");
+			json = Validate.field(input, "body_json");
 			
 			// Validate required fields:
 			auth_option = Validate.auth_option(json);

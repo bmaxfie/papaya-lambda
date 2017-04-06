@@ -71,7 +71,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 		
 		try {
 			// Find Paths:
-			json = Validate.field(input, "body-json");
+			json = Validate.field(input, "body_json");
 			path = Validate.field(input, "params");
 			path = Validate.field(path, "path");
 			

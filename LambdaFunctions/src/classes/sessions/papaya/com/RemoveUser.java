@@ -65,7 +65,7 @@ public class RemoveUser implements RequestHandler<Map<String, Object>, Map<Strin
 		
 		try {
 			// Find Paths:
-			json = Validate.field(input, "body-json");
+			json = Validate.field(input, "body_json");
 			
 			user_id = Validate.user_id(json);
 			service_type = Validate.service(json);

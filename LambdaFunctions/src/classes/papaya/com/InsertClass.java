@@ -65,7 +65,7 @@ public class InsertClass implements RequestHandler<Map<String, Object>, Map<Stri
 		
 		try {
 			// Find path:
-			json = Validate.field(input, "body-json");
+			json = Validate.field(input, "body_json");
 			
 			// Validate required fields:
 			user_id = Validate.user_id(json);

@@ -41,7 +41,7 @@ public class AddFriend implements RequestHandler<Map<String, Object>, Map<String
 		// Required request fields for SQL
 		try {
 			// Find path:
-			json = Validate.field(input, "body-json");
+			json = Validate.field(input, "body_json");
 			
 			// Validate required fields:
 			user_id = Validate.user_id(json);
