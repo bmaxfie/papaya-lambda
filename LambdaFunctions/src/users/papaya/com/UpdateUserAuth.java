@@ -45,7 +45,7 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required request fields:
 		int auth_option;
-		String user_id = "", username = "", email = "", authentication_key = "";
+		String user_id = "", username = "", email = "", authentication_key = "", service_user_id = "";
 		
 		/*
 		 * 1. Check request body (validate) for proper format of fields:
@@ -63,12 +63,13 @@ public class UpdateUserAuth implements RequestHandler<Map<String, Object>, Map<S
 		
 		try {
 			// Find path:
-			json = Validate.field(input, "body-json");
+			json = Validate.field(input, "body_json");
 			
 			// Validate required fields:
 			auth_option = Validate.auth_option(json);
 			service_type = Validate.service(json);
 			authentication_key = Validate.authentication_key(json, service_type);
+			service_user_id = Validate.service_user_id(json, service_type);
 			if (auth_option == 1) {
 				user_id = Validate.user_id(json);
 			} else if (auth_option == 2) {

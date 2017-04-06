@@ -47,7 +47,7 @@ public class InsertClass implements RequestHandler<Map<String, Object>, Map<Stri
 		AuthServiceType service_type = AuthServiceType.NONE;
 
 		// Required request fields for authentication:
-		String authentication_key;
+		String authentication_key, service_user_id;
 		String user_id = "";
 
 		// Required request fields for SQL
@@ -65,12 +65,13 @@ public class InsertClass implements RequestHandler<Map<String, Object>, Map<Stri
 		
 		try {
 			// Find path:
-			json = Validate.field(input, "body-json");
+			json = Validate.field(input, "body_json");
 			
 			// Validate required fields:
 			user_id = Validate.user_id(json);
 			service_type = Validate.service(json);
 			authentication_key = Validate.authentication_key(json, service_type);
+			service_user_id = Validate.service_user_id(json, service_type);
 			classname = Validate.classname(json);
 			description = Validate.description(json, "description");
 		} catch (Exception400 e400) {

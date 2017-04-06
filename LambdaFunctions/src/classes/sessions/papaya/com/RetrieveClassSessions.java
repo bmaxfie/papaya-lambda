@@ -43,7 +43,7 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 		Map<String, Object> response = new HashMap<String, Object>();
 		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required request fields:
-		String user_id = "", authentication_key = "", service = "", class_id = "";
+		String user_id = "", authentication_key = "", service_user_id = "", service = "", class_id = "";
 		
 		/*
 		 * 1. Check request body (validate) for proper format of fields:
@@ -73,6 +73,7 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 			service_type = Validate.service(querystrings);
 			// 3. validate 'authentication_key' is of length allowed?
 			authentication_key = Validate.authentication_key(querystrings, service_type);
+			service_user_id = Validate.service_user_id(querystrings, service_type);
 			// 4. validate the path parameter 'class_id'
 			class_id = Validate.class_id(path);
 		} catch (Exception400 e400) {

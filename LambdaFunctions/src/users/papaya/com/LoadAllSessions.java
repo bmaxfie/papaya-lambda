@@ -43,7 +43,7 @@ public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<
 		ArrayList<Map<String, Object>> classes = new ArrayList<Map<String, Object>>();
 		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required request fields:
-		String user_id = "", authentication_key = "", class_id = "";
+		String user_id = "", authentication_key = "", class_id = "", service_user_id = "";
 		
 		/*
 		 * 1. Check request body (validate) for proper format of fields:
@@ -70,6 +70,7 @@ public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<
 			// 3. validate 'authentication_key' is of length allowed?
 			// TODO: Determine more strict intro rules
 			authentication_key = Validate.authentication_key(querystring, service_type);
+			service_user_id = Validate.service_user_id(querystring, service_type);
 		} catch (Exception400 e400) {
 			logger.log(e400.getMessage());
 			return e400.getResponse();
@@ -102,13 +103,15 @@ public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<
 				c.put("descriptions", classResult.getString("description"));
 				
 				logger.log("Found class: " + classResult.getString("class_id") + "\n");
-				
-				String getSessionInfo = "SELECT * FROM sessions AS s, classes_sessions AS c_s WHERE c_s.session_class_id='"+class_id+"' AND active=1 AND s.session_id=c_s.class_session_id";
+				class_id = classResult.getString("class_id");
+				String getSessionInfo = "SELECT * FROM sessions AS s, classes_sessions AS c_s WHERE"
+						+ " c_s.session_class_id='"+class_id+"' AND active=1 AND s.session_id=c_s.class_session_id";
 				Statement sessionStatement = con.createStatement();
 				ResultSet sessionResult = sessionStatement.executeQuery(getSessionInfo);
-				
+				logger.log(getSessionInfo);
 				ArrayList<Map<String, Object>> sessions = new ArrayList<Map<String, Object>>();
 				while (sessionResult.next()) {
+					logger.log("made it inside while loop");
 					Map<String, Object> s = new HashMap<String, Object>();
 					s.put("session_id", sessionResult.getString("session_id"));
 					s.put("host_id", sessionResult.getString("host_id"));

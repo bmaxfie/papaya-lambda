@@ -87,6 +87,28 @@ public class Validate
 		return authentication_key;
 	}
 	
+	static public String service_user_id(Map<String, Object> json, AuthServiceType service_type) throws Exception400 {
+		String service_user_id;
+		if ((!json.containsKey("service_user_id") 
+						|| !(json.get("service_user_id") instanceof String)
+						|| !((service_user_id = (String) json.get("service_user_id")) != null))) {
+			
+			throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+					generate400("service_user_id does not exist.", "service_user_id"));
+		}
+		
+		if (service_type == AuthServiceType.FACEBOOK 
+						&& service_user_id.length() < Authentication.FACEBOOK_KEY_MIN_LEN
+				|| service_type == AuthServiceType.GOOGLE
+						&& service_user_id.length() < Authentication.GOOGLE_KEY_MIN_LEN) {
+			
+			throw new Exception400("ERROR: 400 Bad Request - Returned to client. service_user_id was not of valid length, instead it was '" + service_user_id.length() + "'.", 
+					generate400("service_user_id was not of valid length, instead it was '" + service_user_id.length() + "'.", "service_user_id"));
+		}
+		
+		return service_user_id;
+	}
+	
 	static public long phone(Map<String, Object> json) throws Exception400 {
 		long phone = 0;
 		if (json.containsKey("phone")) {

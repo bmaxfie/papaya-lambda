@@ -43,7 +43,7 @@ public class GetCurrentSession implements RequestHandler<Map<String, Object>, Ma
 		Map<String, Object> response = new HashMap<String, Object>();
 		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required request fields:
-		String user_id = "", authentication_key = "";
+		String user_id = "", authentication_key = "", service_user_id = "";
 		
 		/*
 		 * 1. Check request body (validate) for proper format of fields:
@@ -71,6 +71,7 @@ public class GetCurrentSession implements RequestHandler<Map<String, Object>, Ma
 
 			// TODO: Determine more strict intro rules
 			authentication_key = Validate.authentication_key(querystring, service_type);
+			service_user_id = Validate.service_user_id(querystring, service_type);
 		} catch (Exception400 e400) {
 			logger.log(e400.getMessage());
 			return e400.getResponse();
