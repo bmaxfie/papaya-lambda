@@ -80,6 +80,8 @@ public class InsertClass implements RequestHandler<Map<String, Object>, Map<Stri
 		}
 		
 		class_id = UIDGenerator.generateUID(classname);
+		// Cut class_id to 10 characters to make it easier for user input:
+		class_id = class_id.substring(0, 10);
 		student_access_key = UIDGenerator.generateUID(classname);
 		ta_access_key = UIDGenerator.generateUID(classname);
 		professor_access_key = UIDGenerator.generateUID(classname);
