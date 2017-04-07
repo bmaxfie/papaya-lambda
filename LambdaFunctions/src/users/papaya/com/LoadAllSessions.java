@@ -92,7 +92,7 @@ public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<
 			 * 
 			 * 		1. Update authentication_key for user_id.
 			 */
-			String getClassInfo = "SELECT class_id, classname, description FROM classes AS c, users_classes AS uc WHERE uc.class_user_id='" + user_id + "' AND c.class_id=uc.user_class_id";
+			String getClassInfo = "SELECT user_role, class_id, classname, description FROM classes AS c, users_classes AS uc WHERE uc.class_user_id='" + user_id + "' AND c.class_id=uc.user_class_id";
 			Statement classStatement = con.createStatement();
 			ResultSet classResult = classStatement.executeQuery(getClassInfo);
 			
@@ -101,6 +101,7 @@ public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<
 				c.put("class_id", classResult.getString("class_id"));
 				c.put("classname", classResult.getString("classname"));
 				c.put("descriptions", classResult.getString("description"));
+				c.put("user_role", classResult.getInt("class_role"));
 				
 				logger.log("Found class: " + classResult.getString("class_id") + "\n");
 				class_id = classResult.getString("class_id");
