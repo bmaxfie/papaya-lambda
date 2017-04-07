@@ -130,6 +130,51 @@ public class RemoveUser implements RequestHandler<Map<String, Object>, Map<Strin
 			statement.close();
 			
 			
+			String checkIfEmpty = "SELECT active, session_user_id FROM users_sessions WHERE user_session_id='" + current_session_id + "'";
+			statement = con.createStatement();
+			result = statement.executeQuery(checkIfEmpty);
+			boolean stillExists = false;
+			String newHostIfNeeded = "";
+			while(result.next()) {
+				if(result.getString("active") == "1") {
+					String idResult = result.getString("session_user_id");
+					if(!idResult.equals(user_id)) {
+						newHostIfNeeded = idResult;
+						stillExists = true;
+					}
+				}
+				
+			}
+			result.close();
+			statement.close();
+			
+			//if the user is the study session host
+			String isUserHost = "SELECT host_id FROM sessions WHERE session_id='" + current_session_id + "'";
+			statement = con.createStatement();
+			result = statement.executeQuery(isUserHost);
+			boolean userIsHost = false;
+			if(result.getString("host_id").equals(user_id)) {
+				userIsHost = true;
+			}
+			result.close();
+			statement.close();
+			
+			if(stillExists && userIsHost) {
+				//change host to newHostIfNeeded
+				String transferHost = "UPDATE sessions SET host_id='" + newHostIfNeeded + "' WHERE session_id='" + current_session_id + "'";
+				statement = con.createStatement();
+				statement.execute(transferHost);
+				statement.close();
+			}
+			
+			if(!stillExists) {
+				String deactivateSession = "UPDATE classes_sessions SET active=0 WHERE class_session_id='" + current_session_id + "'";
+				statement = con.createStatement();
+				statement.execute(deactivateSession);
+				statement.close();
+			}
+			
+			
 		} catch (SQLException ex) {
 			// handle any errors
 			logger.log("SQLException: " + ex.getMessage());
