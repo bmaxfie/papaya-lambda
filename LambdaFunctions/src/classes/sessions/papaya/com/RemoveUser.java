@@ -143,12 +143,13 @@ public class RemoveUser implements RequestHandler<Map<String, Object>, Map<Strin
 			String newHostIfNeeded = "";
 			while(result.next()) {
 				if(result.getString("active") == "1") {
-					stillExists = true;
+					String idResult = result.getString("session_user_id");
+					if(!idResult.equals(user_id)) {
+						newHostIfNeeded = idResult;
+						stillExists = true;
+					}
 				}
-				String idResult = result.getString("session_user_id");
-				if(!idResult.equals(user_id)) {
-					newHostIfNeeded = idResult;
-				}
+				
 			}
 			result.close();
 			statement.close();

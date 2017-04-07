@@ -149,6 +149,79 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 			statement.execute(insertUserSession);
 			statement.close();
 			
+			//code added for host transfer
+			//if current_session_id is set to something else, remove the user from that session and update their current_session_id to new
+			String getCurrentSessionID = "SELECT current_session_id FROM users WHERE user_id='" + user_id + "'";
+			statement = con.createStatement();
+			ResultSet result = statement.executeQuery(getCurrentSessionID);
+			boolean curSessionIDExists = false;
+			String result_session_id = "";
+			if(result.next()) {
+				result_session_id = result.getString("current_session_id");
+				if(!(result_session_id == null) && !result_session_id.equals("")) {
+					curSessionIDExists = true;
+				}
+			}
+			result.close();
+			statement.close();
+			
+			//if current_session_id exists, remove user from that session and transfer host if necessary: should not happen if everything works properly
+			if(curSessionIDExists) {
+				String removeUserFromSession = "UPDATE users_sessions SET active=0 "
+						+ "WHERE session_user_id='" + user_id + "' AND user_session_id='" + result_session_id + "'";
+				statement = con.createStatement();
+				statement.execute(removeUserFromSession);
+				statement.close();
+				
+				//if the user is the study session host
+				String isUserHost = "SELECT host_id FROM sessions WHERE session_id='" + result_session_id + "'";
+				statement = con.createStatement();
+				result = statement.executeQuery(isUserHost);
+				boolean userIsHost = false;
+				if(result.getString("host_id").equals(user_id)) {
+					userIsHost = true;
+				}
+				result.close();
+				statement.close();
+				
+				String checkIfEmpty = "SELECT active, session_user_id FROM users_sessions WHERE user_session_id='" + result_session_id + "'";
+				statement = con.createStatement();
+				result = statement.executeQuery(checkIfEmpty);
+				boolean stillExists = false;
+				String newHostIfNeeded = "";
+				while(result.next()) {
+					if(result.getString("active") == "1") {
+						String idResult = result.getString("session_user_id");
+						if(!idResult.equals(user_id)) {
+							newHostIfNeeded = idResult;
+							stillExists = true;
+						}
+					}
+					
+				}
+
+				result.close();
+				statement.close();
+				
+				if(stillExists && userIsHost) {
+					//change host to newHostIfNeeded
+					String transferHost = "UPDATE sessions SET host_id='" + newHostIfNeeded + "' WHERE session_id='" + result_session_id + "'";
+					statement = con.createStatement();
+					statement.execute(transferHost);
+					statement.close();
+				}
+				
+				if(!stillExists) {
+					String deactivateSession = "UPDATE classes_sessions SET active=0 WHERE class_session_id='" + result_session_id + "'";
+					statement = con.createStatement();
+					statement.execute(deactivateSession);
+					statement.close();
+				}
+							
+			}
+			
+			//end of code added for host transfer
+			
 			String updateUser = "UPDATE users SET current_session_id='" + session_id + "' WHERE user_id='" + user_id + "'";
 			statement = con.createStatement();
 			statement.execute(updateUser);
