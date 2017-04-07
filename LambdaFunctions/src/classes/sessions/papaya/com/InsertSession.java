@@ -178,8 +178,10 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 				statement = con.createStatement();
 				result = statement.executeQuery(isUserHost);
 				boolean userIsHost = false;
-				if(result.getString("host_id").equals(user_id)) {
-					userIsHost = true;
+				if(result.next()) {
+					if(result.getString("host_id").equals(user_id)) {
+						userIsHost = true;
+					}
 				}
 				result.close();
 				statement.close();
