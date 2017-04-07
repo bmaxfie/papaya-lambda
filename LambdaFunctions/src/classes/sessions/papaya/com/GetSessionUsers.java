@@ -98,7 +98,7 @@ public class GetSessionUsers implements RequestHandler<Map<String, Object>, Map<
 			 */
 			
 			String getUserInfo = "SELECT user_id, username FROM users_sessions us, users u "
-					+ "WHERE us.user_session_id='" + session_id + "' AND u.user_id=us.session_user_id";
+					+ "WHERE us.user_session_id='" + session_id + "' AND u.user_id=us.session_user_id AND us.active=1";
 			Statement statement = con.createStatement();
 			ResultSet result = statement.executeQuery(getUserInfo);
 			
