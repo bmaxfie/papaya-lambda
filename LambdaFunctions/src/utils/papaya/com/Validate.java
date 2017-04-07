@@ -84,6 +84,9 @@ public class Validate
 					generate400("authentication_key was not of valid length, instead it was '" + authentication_key.length() + "'.", "authentication_key"));
 		}
 		
+		authentication_key = authentication_key.replaceAll("%2F", "/");
+		authentication_key = authentication_key.replaceAll("%2B", "+");
+		
 		return authentication_key;
 	}
 	
@@ -105,6 +108,9 @@ public class Validate
 			throw new Exception400("ERROR: 400 Bad Request - Returned to client. service_user_id was not of valid length, instead it was '" + service_user_id.length() + "'.", 
 					generate400("service_user_id was not of valid length, instead it was '" + service_user_id.length() + "'.", "service_user_id"));
 		}
+
+		service_user_id = service_user_id.replaceAll("%2F", "/");
+		service_user_id = service_user_id.replaceAll("%2B", "+");
 		
 		return service_user_id;
 	}
@@ -175,6 +181,7 @@ public class Validate
 		} else if (class_id.length() > 45)
 			class_id = class_id.substring(0, 45);
 		class_id = class_id.replaceAll("%2F", "/");
+		class_id = class_id.replaceAll("%2B", "+");
 		
 		return class_id;
 	}
@@ -191,6 +198,9 @@ public class Validate
 		} else if (user_id.length() > 45) {
 			user_id = user_id.substring(0, 45);
 		}
+
+		user_id = user_id.replaceAll("%2F", "/");
+		user_id = user_id.replaceAll("%2B", "+");
 		
 		return user_id;
 	}
@@ -225,6 +235,7 @@ public class Validate
 			session_id = session_id.substring(0, 45);
 		}
 		session_id = session_id.replaceAll("%2F", "/");
+		session_id = session_id.replaceAll("%2B", "+");
 		
 		return session_id;
 	}
