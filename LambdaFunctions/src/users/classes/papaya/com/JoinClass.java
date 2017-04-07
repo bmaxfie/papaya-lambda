@@ -102,7 +102,7 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 			Statement statement = con.createStatement();
 			
 			//get the class_id from database
-			String get_class_id = "SELECT class_id, student_access_key, ta_access_key, professor_access_key FROM classes WHERE student_access_key='" + access_key + "' OR ta_access_key='" + access_key + "' OR professor_access_key='" + access_key +"'";
+			String get_class_id = "SELECT class_id, student_access_key, ta_access_key, professor_access_key FROM classes WHERE student_access_key='" + access_key + "' OR ta_access_key='" + access_key + "' OR professor_access_key='" + access_key +"'"; 
 			ResultSet class_id_rs = statement.executeQuery(get_class_id);
 			logger.log("query = " + get_class_id + "\n");
 			String class_id = "";
@@ -134,10 +134,23 @@ public class JoinClass implements RequestHandler<Map<String, Object>, Map<String
 				return generate400("class_id does not exist, probably from bad access_key.", "class_id");
 			}
 			
+			class_id_rs.close();
+			statement.close();
+			
+			String alreadyInClass = "SELECT * FROM users_classes WHERE user_class_id='" + class_id + "' AND class_user_id='" + user_id + "'";
+			statement = con.createStatement();
+			ResultSet result = statement.executeQuery(alreadyInClass);
+			if (result.next()) {
+				logger.log("ERROR: 406 Not Acceptable - Returned to client. user_id already joined class_id.");
+				return generate406("user_id already joined class_id");
+			}
+			result.close();
+			statement.close();
+			
 			// Insert new row into users_classes
 			String joinClass = "INSERT INTO users_classes VALUES (" + user_role + ", '"
 					+ user_id + "', '" + class_id + "')";
-			
+			statement = con.createStatement();
 			statement.execute(joinClass);
 			statement.executeBatch();
 			statement.close();

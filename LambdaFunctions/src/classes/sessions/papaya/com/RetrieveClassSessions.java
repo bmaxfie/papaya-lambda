@@ -100,7 +100,7 @@ public class RetrieveClassSessions implements RequestHandler <Map<String, Object
 			 */
 			
 			// TODO: Accidentally made class retriever instead of session retriever.
-			String setauth = "SELECT * FROM sessions AS s, classes_sessions AS c_s WHERE c_s.session_class_id='"+class_id+"' AND active=1 AND s.session_id=c_s.class_session_id";
+			String setauth = "SELECT * FROM sessions AS s, classes_sessions AS c_s, users_sessions AS u_s WHERE c_s.session_class_id='"+class_id+"' AND u_s.active=1 AND s.session_id=c_s.class_session_id";
 			Statement statement = con.createStatement();
 			ResultSet result = statement.executeQuery(setauth);
 			

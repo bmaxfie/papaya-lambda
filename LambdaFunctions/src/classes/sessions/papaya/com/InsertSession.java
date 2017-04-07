@@ -141,7 +141,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 			statement.execute(insertSession);
 			statement.close();
 			
-			String insertClassSession = "INSERT INTO classes_sessions VALUES (" + active + ", '" + session_id + "', '" + class_id + "')";
+			String insertClassSession = "INSERT INTO classes_sessions VALUES ('" + session_id + "', '" + class_id + "')";
 			statement = con.createStatement();
 			statement.execute(insertClassSession);
 			statement.close();

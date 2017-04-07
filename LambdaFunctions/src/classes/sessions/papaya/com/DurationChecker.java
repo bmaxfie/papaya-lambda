@@ -86,9 +86,10 @@ public class DurationChecker implements RequestHandler<Map<String, Object>, Map<
 			while (result.next()) {
 				try {
 					Date date = dateFormatter.parse(result.getString("start_time"));
-					//logger.log("session_id: " + result.getString("session_id") + " start_time: " + result.getString("start_time") + " toInstant: " + date.toInstant());
+					logger.log("session_id: " + result.getString("session_id") + " date.instant: " + date.toInstant().toString() + " current.instant: " + current_time.toInstant().toString() + " date.instant + duration: " + date.toInstant().plus(result.getInt("duration"), ChronoUnit.MINUTES).toString() + "\n");
 					if (date.toInstant().plus(result.getInt("duration"), ChronoUnit.MINUTES).isBefore(current_time.toInstant())) {
 						// make session inactive
+						logger.log("MAKE INACTIVE!\n");
 						String id = result.getString("session_id");
 						if (!sessionInactives.contains(id)) {
 							sessionInactives.add(id);
@@ -113,6 +114,8 @@ public class DurationChecker implements RequestHandler<Map<String, Object>, Map<
 			statement = con.createStatement();
 			statement.execute(updateInactives);
 			statement.close();
+			
+			// TODO: Update users' current_session_id's to ""
 			
 			
 		} catch (SQLException ex) {

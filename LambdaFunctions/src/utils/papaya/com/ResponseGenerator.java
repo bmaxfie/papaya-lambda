@@ -20,6 +20,14 @@ public class ResponseGenerator {
     	response.put("code_description", "Not Found");
     	response.put("error_description", message);
     	return response;
+    }    
+    
+    public static Map<String, Object> generate406(String message) {
+    	Map<String, Object> response = new HashMap<String, Object>();
+    	response.put("code", 406);
+    	response.put("code_description", "Not Acceptable");
+    	response.put("error_description", message);
+    	return response;
     }
     
     public static Map<String, Object> generate500(String message) {
@@ -29,4 +37,5 @@ public class ResponseGenerator {
     	response.put("error_description", message);
     	return response;
     }
+
 }
