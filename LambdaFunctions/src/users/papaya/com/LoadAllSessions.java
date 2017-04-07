@@ -101,7 +101,7 @@ public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<
 				c.put("class_id", classResult.getString("class_id"));
 				c.put("classname", classResult.getString("classname"));
 				c.put("descriptions", classResult.getString("description"));
-				c.put("user_role", classResult.getInt("class_role"));
+				c.put("user_role", classResult.getInt("user_role"));
 				
 				logger.log("Found class: " + classResult.getString("class_id") + "\n");
 				class_id = classResult.getString("class_id");
