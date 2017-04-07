@@ -129,12 +129,13 @@ public class RemoveUser implements RequestHandler<Map<String, Object>, Map<Strin
 //			statement.execute(removeUser);
 //			statement.close();
 //			
+			logger.log("After removeUser\n");
 			//sets the current session of the user back to nothing as they are no longer in a session
 			String updateUser = "UPDATE users SET current_session_id='' WHERE user_id='" + user_id + "'";
 			statement = con.createStatement();
 			statement.execute(updateUser);
 			statement.close();
-			
+			logger.log("After updateUser\n");
 			
 			String checkIfEmpty = "SELECT active, session_user_id FROM users_sessions WHERE user_session_id='" + current_session_id + "'";
 			statement = con.createStatement();
@@ -153,7 +154,7 @@ public class RemoveUser implements RequestHandler<Map<String, Object>, Map<Strin
 			}
 			result.close();
 			statement.close();
-			
+			logger.log("After check if empty \n");
 			//if the user is the study session host
 			String isUserHost = "SELECT host_id FROM sessions WHERE session_id='" + current_session_id + "'";
 			statement = con.createStatement();
@@ -174,14 +175,14 @@ public class RemoveUser implements RequestHandler<Map<String, Object>, Map<Strin
 				statement.execute(transferHost);
 				statement.close();
 			}
-			
+			logger.log("after transferhost\n");
 			if(!stillExists) {
 				String deactivateSession = "UPDATE classes_sessions SET active=0 WHERE class_session_id='" + current_session_id + "'";
 				statement = con.createStatement();
 				statement.execute(deactivateSession);
 				statement.close();
 			}
-			
+			logger.log("after deactivate Session");
 			
 		} catch (SQLException ex) {
 			// handle any errors
