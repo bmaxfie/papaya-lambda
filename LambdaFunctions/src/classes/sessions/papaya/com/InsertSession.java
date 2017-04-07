@@ -49,14 +49,11 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required fields:
 		String authentication_key, service_user_id, service;
-		String session_id, location_desc, description, class_id;
+		String session_id, location_desc, description, class_id, start_time;
 		String user_id = "";
 		Integer duration;
 		Double location_lat, location_long;
-		//TODO account for timezone
-		Date date = new Date();
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		String startTime = sdf.format(date);
+		
 		int active = 1;
 		// Optional request fields:
 		Boolean sponsored;
@@ -85,11 +82,13 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 			location_desc = Validate.description(json, "location_desc");
 			description = Validate.description(json, "description");
 			sponsored = Validate.sponsored(json);
+			start_time = Validate.start_time(json);
 			class_id = Validate.class_id(path);
 		} catch (Exception400 e400) {
 			logger.log(e400.getMessage());
 			return e400.getResponse();
 		}
+
 
 		/*
 		 * 2. Authentic authentication_key check:
@@ -134,7 +133,7 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 			String insertSession = "INSERT INTO sessions VALUES ('" + session_id + "', '" 
 						+ user_id + "', " + duration + ", '" + location_desc + "', '" 
 						+ description + "', '" + sponsored.toString() + "', " + location_lat.floatValue() 
-						+ ", " + location_long.floatValue() + ", '" + startTime + "')";
+						+ ", " + location_long.floatValue() + ", '" + start_time + "')";
 			Statement statement = con.createStatement();
 			statement.execute(insertSession);
 			statement.close();

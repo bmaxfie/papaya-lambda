@@ -2,7 +2,10 @@ package utils.papaya.com;
 
 import static utils.papaya.com.ResponseGenerator.*;
 
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.Map;
+import java.util.TimeZone;
 
 /**
  * Class holds generic functions to validate fields in input JSON
@@ -346,5 +349,39 @@ public class Validate
 			classname = classname.substring(0, 45);
 		return classname;
 	}
+	
+	public static String start_time(Map<String, Object> json) throws Exception400 {
+		String start_time;
+		
+		if ((!json.containsKey("start_time") 
+				|| !(json.get("start_time") instanceof String)
+				|| !((start_time = (String) json.get("start_time")) != null))) {
+			
+			throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+					generate400("start_time does not exist.", "start_time"));
+		}
+			
+		return start_time;
+	}
+	
+	/*public static TimeZone GMT(Map<String, Object> json) throws Exception400 {
+		String GMT;
+		TimeZone zone = null;
+		
+		if ((!json.containsKey("GMT")
+				|| !(json.get("GMT") instanceof String)
+				|| !((GMT = (String) json.get("GMT")) != null))) {
+			
+			throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+					generate400("GMT does not exist.", "GMT"));
+		} 
+		
+		zone = TimeZone.getTimeZone(GMT);
+		if (zone == null)
+			throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+					generate400("GMT is not in the right format.", "GMT"));
+		
+		return zone;
+	}*/
 	
 }
