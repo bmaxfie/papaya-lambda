@@ -68,7 +68,9 @@ public class AddFriend implements RequestHandler<Map<String, Object>, Map<String
 				logger.log("ERROR: 404 Not Found - user_id does not exist");
 				return generate404("user_id2 not found");
 			}
-			
+			if(user_id.equals(user_id2)) {
+				return generate400("Cannot add yourself as a friend", "user_id, user_id2");
+			}
 			/*
 			 * if friends entry exists already, update confirmed to true/1
 			 * otherwise add entry to the table with confirmed=false/0
