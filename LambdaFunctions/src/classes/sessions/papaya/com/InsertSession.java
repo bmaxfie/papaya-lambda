@@ -101,6 +101,9 @@ public class InsertSession implements RequestHandler<Map<String, Object>, Map<St
 		 * 
 		 * 1. Check if
 		 */
+		
+		SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		start_time = dateFormatter.format(new Date());
 
 		/*
 		 * ### Generate unique user_id number and validate its uniqueness.

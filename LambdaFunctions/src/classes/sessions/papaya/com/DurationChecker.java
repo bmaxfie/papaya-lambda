@@ -8,15 +8,23 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.TimeZone;
+
+import javax.swing.text.DateFormatter;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
-public class DurationChecker implements RequestHandler<String, String> {
+public class DurationChecker implements RequestHandler<Map<String, Object>, Map<String, Object>> {
 	
 	/**
 	 * Steps to implement a generic papaya API Lambda Function:
@@ -35,35 +43,75 @@ public class DurationChecker implements RequestHandler<String, String> {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public String handleRequest(String input, Context context) {
+	public Map<String, Object> handleRequest(Map<String, Object> input, Context context) {
 
 		this.context = context;
 		this.logger = context.getLogger();
 		
 		SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		dateFormatter.setTimeZone(TimeZone.getTimeZone("GMT"));
+		//String current_time = dateFormatter.format(new Date());
+		Date current_time = new Date();
 		
 		Connection con = getRemoteConnection(context);
 
 		try {
 			
-			//TODO need to check if current_session_id matches a session_id in the sessions or user_sessions table?
-			
-			String removeUser = "SELECT user_session_id FROM user_sessions WHERE ";
+			String getActiveSessions = "SELECT user_session_id FROM users_sessions WHERE active=1";
 			Statement statement = con.createStatement();
-			ResultSet result = statement.executeQuery(removeUser);
+			ResultSet result = statement.executeQuery(getActiveSessions);
+			
+			HashSet<String> activeSessions = new HashSet<String>();
+			while (result.next()) {
+				String session_id = result.getString("user_session_id");
+				if (!activeSessions.contains(session_id))
+					activeSessions.add(session_id);
+			}
+			result.close();
 			statement.close();
-		
-//			//removes the user-session pair from the users-sessions table
-//			String removeUser = "DELETE FROM users_sessions WHERE session_user_id='" + user_id + "' AND user_session_id='" + current_session_id + "'";
-//			statement = con.createStatement();
-//			statement.execute(removeUser);
-//			statement.close();
-//			
-			//sets the current session of the user back to nothing as they are no longer in a session
-			String updateUser = "UPDATE users SET current_session_id='' WHERE user_id='" + user_id + "'";
+
+			if (activeSessions.isEmpty())
+				return new HashMap<String, Object>();
+			
+			String getSessionInfo = "SELECT session_id, start_time, duration FROM sessions WHERE session_id IN ( ";
+			for (String id : activeSessions) {
+				getSessionInfo += "'" + id + "', ";
+			}
+			if (!activeSessions.isEmpty())
+				getSessionInfo = getSessionInfo.substring(0, getSessionInfo.length() - 2) + " )";
+			logger.log("\ngetSessionInfo: " + getSessionInfo + "\n");
 			statement = con.createStatement();
-			statement.execute(updateUser);
+			result = statement.executeQuery(getSessionInfo);
+			
+			HashSet<String> sessionInactives = new HashSet<String>();
+			while (result.next()) {
+				try {
+					Date date = dateFormatter.parse(result.getString("start_time"));
+					//logger.log("session_id: " + result.getString("session_id") + " start_time: " + result.getString("start_time") + " toInstant: " + date.toInstant());
+					if (date.toInstant().plus(result.getInt("duration"), ChronoUnit.MINUTES).isBefore(current_time.toInstant())) {
+						// make session inactive
+						String id = result.getString("session_id");
+						if (!sessionInactives.contains(id)) {
+							sessionInactives.add(id);
+						}
+					}
+				} catch (ParseException ignore) { logger.log("PARSE EXCEPTION: " + ignore.getMessage()); }
+			}
+			result.close();
+			statement.close();
+
+			logger.log("inactives: " + sessionInactives.toString() + "\n");
+			
+			if (sessionInactives.isEmpty())
+				return new HashMap<String, Object>();
+			
+			String updateInactives = "UPDATE users_sessions SET active=0 WHERE user_session_id IN ( ";
+			for (String id : sessionInactives) {
+				updateInactives += "'" + id + "', ";
+			}
+			updateInactives = updateInactives.substring(0, updateInactives.length() - 2) + " )";
+			logger.log("updateInactives: " + updateInactives + "\n");
+			statement = con.createStatement();
+			statement.execute(updateInactives);
 			statement.close();
 			
 			
@@ -82,7 +130,7 @@ public class DurationChecker implements RequestHandler<String, String> {
 				}
 		}
 
-		return "";
+		return new HashMap<String, Object>();
 	}
 	
 	public static Connection getRemoteConnection(Context context) {
