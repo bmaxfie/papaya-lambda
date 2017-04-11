@@ -12,4 +12,6 @@ Members: Ben Maxfield, Christian Lock, Adam Johnston, Caleb Flynn, Scott Hanberg
 
 [Sprint 2 Plan](http://github.com/bmaxfie/papaya-lambda/blob/master/docs/SprintPlan2.pdf)
 
+[Sprint 3 Plan](http://github.com/bmaxfie/papaya-lambda/blob/master/docs/SprintPlan3.pdf)
+
 ####Documentation:
