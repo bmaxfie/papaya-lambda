@@ -290,6 +290,44 @@ public class Validate
 		return description;
 	}
 	
+	public static String message(Map<String, Object> json, String fieldname) throws Exception400 {
+		String message;
+		
+		if (!json.containsKey(fieldname)
+				|| !(json.get(fieldname) instanceof String)
+				|| !((message = (String) json.get(fieldname)) != null)) {
+			
+			throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+					generate400(fieldname+" does not exist.", fieldname));
+		}
+		else if (message.length() > 255)
+			throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+					generate400(fieldname+" is too long (> 255 characters).", fieldname));
+		
+		return message;
+	}
+	
+	public static int visibility(Map<String, Object> json) throws Exception400 {
+		String visible;
+		
+		if (!json.containsKey("visibility")
+				|| !(json.get("visibility") instanceof String)
+				|| !((visible = (String) json.get("visibility")) != null)) {
+			
+			throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+					generate400("visibility does not exist.", "visibility"));
+		}
+		int visibility = -1;
+		try {
+			visibility = Integer.parseInt(visible);
+		} catch(Exception e) {
+			throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+					generate400("visibility is not a valid integer.", "visibility"));
+		}
+
+		return visibility;
+	}
+	
 	public static Boolean sponsored(Map<String, Object> json) throws Exception400 {
 		Boolean sponsored;
 		
