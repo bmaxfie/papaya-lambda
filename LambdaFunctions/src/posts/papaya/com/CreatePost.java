@@ -50,6 +50,7 @@ public class CreatePost implements RequestHandler<Map<String, Object>, Map<Strin
 		AuthServiceType service_type = AuthServiceType.NONE;
 		
 		String user_id = "";
+		String class_id = "";
 		String post_id = ""; //created by the lambda function
 		// Required request fields:
 		String session_id, authentication_key, service_user_id, start_time, message;
@@ -71,6 +72,7 @@ public class CreatePost implements RequestHandler<Map<String, Object>, Map<Strin
 			
 			// Validate required fields:
 			session_id = Validate.session_id(json);
+			class_id = Validate.class_id(json);
 			service_type = Validate.service(json);
 			authentication_key = Validate.authentication_key(json, service_type);
 			service_user_id = Validate.service_user_id(json, service_type);
@@ -121,6 +123,11 @@ public class CreatePost implements RequestHandler<Map<String, Object>, Map<Strin
 				return generate404("session_id not found in database.");
 			}
 			
+			if(!classIDExists(class_id, con)) {
+				logger.log("ERROR: 404 Not Found - class_id does not exist in database.");
+				return generate404("class_id not found in database.");
+			}
+			
 			for (int i = 0; (exists = postIDExists(post_id, con)) && i < 3; i++) {
 				post_id = UIDGenerator.generateUID(user_id + session_id);
 			}
@@ -129,9 +136,19 @@ public class CreatePost implements RequestHandler<Map<String, Object>, Map<Strin
 				return generate500("generateUID() failed 3 times. Try recalling.");
 			}
 			
-			String insertPost = "INSERT INTO posts VALUES ('" + post_id + "', '"
-					+ session_id + "', '" + user_id + "', '" + start_time + "', '" + message + "', " + visibility + ")";
+			int user_role = 0;
+			String getUserRole = "SELECT user_role FROM users_classes WHERE class_user_id='" + user_id + "' AND user_class_id='" + class_id + ")";
 			Statement statement = con.createStatement();
+			ResultSet result = statement.executeQuery(getUserRole);
+			if(result.next()) {
+				result.getInt("user_role");
+			}
+			result.close();
+			statement.close();
+			
+			String insertPost = "INSERT INTO posts VALUES ('" + post_id + "', '"
+					+ session_id + "', '" + user_id + "', " + user_role + ", '" + start_time + "', '" + message + "', " + visibility + ")";
+			statement = con.createStatement();
 			statement.addBatch(insertPost);
 			statement.executeBatch();
 			statement.close();
@@ -228,6 +245,22 @@ public class CreatePost implements RequestHandler<Map<String, Object>, Map<Strin
 		String getSession = "SELECT session_id FROM sessions WHERE session_id='"+session_id+"'";
 		Statement statement = dbcon.createStatement();
 		ResultSet result = statement.executeQuery(getSession);
+		if (result.next()) {
+			result.close();
+			statement.close();
+			return true;
+		} else {
+			result.close();
+			statement.close();
+			return false; 
+		}
+    }
+	
+	private boolean classIDExists(String class_id, Connection dbcon) throws SQLException
+    {
+		String getClass = "SELECT class_id FROM classes WHERE class_id='"+class_id+"'";
+		Statement statement = dbcon.createStatement();
+		ResultSet result = statement.executeQuery(getClass);
 		if (result.next()) {
 			result.close();
 			statement.close();
