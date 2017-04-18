@@ -57,10 +57,32 @@ body {
     background-color: rgba(255,255,255,0.8);
 }
 
+.download {
+    margin: 15px auto;
+    float: left;
+    clear: both;
+}
+
+.black {
+    color: rgb(0,0,0);
+}
+
+.row1 {
+    /*background-color: rgb(100,100,100);*/
+    font-size: 18px;
+    width: 200px;
+}
+
+.row2 {
+    /*background-color: rgb(120,120,120);*/
+    width: calc(100% - 200px);
+}
+
 /* Header */
 
-.header {
+.background {
     display: table;
+    width: 100%;
     height: 100%;
     background: url(../img/studying.jpg) no-repeat center center scroll;
     -webkit-background-size: cover;
@@ -69,25 +91,16 @@ body {
     -o-background-size: cover;
 }
 
-.login-box {
-    margin: calc(50%) 0px;
+.content-wrapper {
+    margin: 50px;
 }
 
-.login-label {
-    font-size: 18px;
+.class-info {
+    padding: 20px;
 }
 
-.login-input {
-    margin: 20px 10px;
-    padding: 12px 20px;
-    width: 300px;
-}
-
-.submit {
-    width: 120px;
-    padding: 10px 30px;
-    font-size: 18px;
-    margin: auto;
+.class-table {
+    padding: 20px;
 }
 
 .two-thirds-width {
@@ -106,4 +119,8 @@ body {
 
 .grey-trans {
     background-color: rgba(200, 200, 200, .8);
+}
+
+.darker-grey-trans {
+    background-color: rgba(100, 100, 100, .9);
 }
