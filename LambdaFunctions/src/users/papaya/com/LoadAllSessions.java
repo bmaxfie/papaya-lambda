@@ -105,8 +105,9 @@ public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<
 				
 				logger.log("Found class: " + classResult.getString("class_id") + "\n");
 				class_id = classResult.getString("class_id");
-				String getSessionInfo = "SELECT * FROM sessions AS s, classes_sessions AS c_s, users_sessions AS u_s WHERE"
-						+ " c_s.session_class_id='"+class_id+"' AND u_s.active=1 AND s.session_id=c_s.class_session_id";
+				String getSessionInfo = "SELECT * FROM sessions AS s, classes_sessions AS c_s WHERE "
+						+ "c_s.session_class_id='"+class_id+"' AND s.session_id=c_s.class_session_id AND s.session_id=( "
+						+ "SELECT user_session_id FROM users_sessions WHERE active=1)";
 				Statement sessionStatement = con.createStatement();
 				ResultSet sessionResult = sessionStatement.executeQuery(getSessionInfo);
 				logger.log(getSessionInfo);
