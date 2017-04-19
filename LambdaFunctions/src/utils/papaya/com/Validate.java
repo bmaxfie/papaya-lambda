@@ -243,6 +243,25 @@ public class Validate
 		return session_id;
 	}
 	
+	public static String post_id(Map<String, Object> json) throws Exception400 {
+		String post_id;
+		
+		if (!json.containsKey("post_id")
+				|| !(json.get("post_id") instanceof String)
+				|| !((post_id = (String) json.get("post_id")) != null)) {
+		
+		throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+				generate400("user_id does not exist.", "user_id"));
+		} else if (post_id.length() > 45) {
+			post_id = post_id.substring(0, 45);
+		}
+
+		post_id = post_id.replaceAll("%2F", "/");
+		post_id = post_id.replaceAll("%2B", "+");
+		
+		return post_id;
+	}
+	
 	public static int duration(Map<String, Object> json) throws Exception400 {
 		Integer duration;
 		

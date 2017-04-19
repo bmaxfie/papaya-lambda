@@ -44,7 +44,7 @@ public class CreatePost implements RequestHandler<Map<String, Object>, Map<Strin
 		this.context = context;
 		this.logger = context.getLogger();
 		
-		Map<String, Object> json;
+		Map<String, Object> json, path;
 		Map<String, Object> response = new HashMap<String, Object>();
 		
 		AuthServiceType service_type = AuthServiceType.NONE;
@@ -69,10 +69,13 @@ public class CreatePost implements RequestHandler<Map<String, Object>, Map<Strin
 		try {
 			// Find Path:
 			json = Validate.field(input, "body_json");
+			path = Validate.field(input, "params");
+			path = Validate.field(path, "path");
 			
 			// Validate required fields:
-			session_id = Validate.session_id(json);
-			class_id = Validate.class_id(json);
+			user_id = Validate.user_id(json);
+			session_id = Validate.session_id(path);
+			class_id = Validate.class_id(path);
 			service_type = Validate.service(json);
 			authentication_key = Validate.authentication_key(json, service_type);
 			service_user_id = Validate.service_user_id(json, service_type);
@@ -120,28 +123,32 @@ public class CreatePost implements RequestHandler<Map<String, Object>, Map<Strin
 			
 			if(!sessionIDExists(session_id, con)) {
 				logger.log("ERROR: 404 Not Found - session_id does not exist in database.");
-				return generate404("session_id not found in database.");
+				return generate404("session_id not found in database: " + session_id);
 			}
 			
 			if(!classIDExists(class_id, con)) {
 				logger.log("ERROR: 404 Not Found - class_id does not exist in database.");
 				return generate404("class_id not found in database.");
 			}
+			logger.log("before post_id checks\n");
+			post_id=UIDGenerator.generateUID(user_id);
 			
 			for (int i = 0; (exists = postIDExists(post_id, con)) && i < 3; i++) {
-				post_id = UIDGenerator.generateUID(user_id + session_id);
+				post_id = UIDGenerator.generateUID(user_id);
+				logger.log("after post_id checks: " + post_id + "\n");
 			}
 			if (exists) {
 				logger.log("ERROR: 500 Internal Server Error - Returned to client. Could not generate a UID for post on 3 tries.");
 				return generate500("generateUID() failed 3 times. Try recalling.");
 			}
+			logger.log("post_id does not yet exist\n");
 			
 			int user_role = 0;
-			String getUserRole = "SELECT user_role FROM users_classes WHERE class_user_id='" + user_id + "' AND user_class_id='" + class_id + ")";
+			String getUserRole = "SELECT user_role FROM users_classes WHERE class_user_id='" + user_id + "' AND user_class_id='" + class_id + "'";
 			Statement statement = con.createStatement();
 			ResultSet result = statement.executeQuery(getUserRole);
 			if(result.next()) {
-				result.getInt("user_role");
+				visibility = result.getInt("user_role");
 			}
 			result.close();
 			statement.close();

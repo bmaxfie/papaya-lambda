@@ -44,13 +44,13 @@ public class ChangePostVisibility implements RequestHandler<Map<String, Object>,
 		this.context = context;
 		this.logger = context.getLogger();
 		
-		Map<String, Object> json;
+		Map<String, Object> json, path;
 		Map<String, Object> response = new HashMap<String, Object>();
 		
 		AuthServiceType service_type = AuthServiceType.NONE;
 		
 		String user_id = "";
-		String post_id = ""; //created by the lambda function
+		String post_id = ""; 
 		// Required request fields:
 		String session_id, authentication_key, service_user_id;
 		int visibility = 0; //0 = visible by all users, 1 = visible by TA's and Professors only
@@ -69,13 +69,16 @@ public class ChangePostVisibility implements RequestHandler<Map<String, Object>,
 		try {
 			// Find Path:
 			json = Validate.field(input, "body_json");
-			
+			path = Validate.field(input, "params");
+			path = Validate.field(path, "path");
 			// Validate required fields:
-			session_id = Validate.session_id(json);
+			user_id = Validate.user_id(json);
+			session_id = Validate.session_id(path);
 			service_type = Validate.service(json);
 			authentication_key = Validate.authentication_key(json, service_type);
 			service_user_id = Validate.service_user_id(json, service_type);
 			visibility = Validate.visibility(json);
+			post_id = Validate.post_id(json);
 		} catch (Exception400 e400) {
 			logger.log(e400.getMessage());
 			return e400.getResponse();
@@ -117,7 +120,7 @@ public class ChangePostVisibility implements RequestHandler<Map<String, Object>,
 				return generate404("post_id not found in database.");
 			}
 			
-			String updatePost = "UPDATE posts SET visibility=" + visibility + " WHERE post_id";
+			String updatePost = "UPDATE posts SET visibility= " + visibility + " WHERE post_id='" + post_id + "'";
 			Statement statement = con.createStatement();
 			statement.addBatch(updatePost);
 			statement.executeBatch();

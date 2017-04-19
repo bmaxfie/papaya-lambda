@@ -62,7 +62,9 @@ public class GetPosts implements RequestHandler<Map<String, Object>, Map<String,
 		Map<String, Object> querystring;
 		try {
 			// Find Paths:
-			querystring = Validate.field(input, "params");
+			querystring = Validate.field(input, "params");			
+			path = Validate.field(querystring, "path");
+			
 			querystring = Validate.field(querystring, "querystring");
 			
 
@@ -75,7 +77,7 @@ public class GetPosts implements RequestHandler<Map<String, Object>, Map<String,
 			// TODO: Determine more strict intro rules
 			authentication_key = Validate.authentication_key(querystring, service_type);
 			service_user_id = Validate.service_user_id(querystring, service_type);
-			session_id = Validate.session_id(querystring);
+			session_id = Validate.session_id(path);
 		} catch (Exception400 e400) {
 			logger.log(e400.getMessage());
 			return e400.getResponse();
@@ -104,7 +106,7 @@ public class GetPosts implements RequestHandler<Map<String, Object>, Map<String,
 			 * 
 			 */
 
-			String getPosts = "SELECT * FROM posts WHERE post_session_id='" + session_id + "' AND post_user_id='" + user_id + "'";
+			String getPosts = "SELECT * FROM posts WHERE post_session_id='" + session_id + "'";
 			Statement statement = con.createStatement();
 			ResultSet result = statement.executeQuery(getPosts);
 			
