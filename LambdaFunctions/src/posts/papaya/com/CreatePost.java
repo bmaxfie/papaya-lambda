@@ -148,7 +148,7 @@ public class CreatePost implements RequestHandler<Map<String, Object>, Map<Strin
 			Statement statement = con.createStatement();
 			ResultSet result = statement.executeQuery(getUserRole);
 			if(result.next()) {
-				visibility = result.getInt("user_role");
+				user_role = result.getInt("user_role");
 			}
 			result.close();
 			statement.close();
