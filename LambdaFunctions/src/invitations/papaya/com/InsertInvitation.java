@@ -17,9 +17,11 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 
 import utils.papaya.com.AuthServiceType;
 import utils.papaya.com.Exception400;
+import utils.papaya.com.UIDGenerator;
 import utils.papaya.com.Validate;
 
-public class RemoveInvitation implements RequestHandler<Map<String, Object>, Map<String, Object>> {
+public class InsertInvitation implements RequestHandler<Map<String, Object>, Map<String, Object>> {
+	
 	/**
 	 * Steps to implement a generic papaya API Lambda Function:
 	 * 
@@ -31,25 +33,24 @@ public class RemoveInvitation implements RequestHandler<Map<String, Object>, Map
 	 * For description of the API requirements, seek the API Documentation in
 	 * developers folder.
 	 */
-
+	
 	private Context context;
 	private LambdaLogger logger;
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public Map<String, Object> handleRequest(Map<String, Object> input, Context context) {
-
 		this.context = context;
 		this.logger = context.getLogger();
-		Map<String, Object> json, path, querystring;
+		Map<String, Object> json, path;
 		Map<String, Object> response = new HashMap<String, Object>();
 		AuthServiceType service_type = AuthServiceType.NONE;
-		// Required fields:
-		String authentication_key, service_user_id, service;
-		String user_id = "", session_id = "";
 
-		
-		// Optional request fields:
+		// Required request fields for authentication:
+		String authentication_key, service_user_id;
+		String user_id = ""; //ID of user sending request
+		String user_id2 = ""; //ID of user receiving request
+		String session_id = "";
+
 
 		/*
 		 * 1. Check request body (validate) for proper format of fields:
@@ -60,80 +61,64 @@ public class RemoveInvitation implements RequestHandler<Map<String, Object>, Map
 		 */
 		
 		try {
-			// Find Paths:
+			// Find path:
 			json = Validate.field(input, "body_json");
 			path = Validate.field(input, "params");
 			path = Validate.field(path, "path");
 			
+			// Validate required fields:
 			user_id = Validate.user_id(json);
+			user_id2 = Validate.user_id2(json);
 			session_id = Validate.session_id(path);
-			
 			service_type = Validate.service(json);
 			authentication_key = Validate.authentication_key(json, service_type);
 			service_user_id = Validate.service_user_id(json, service_type);
-			
 		} catch (Exception400 e400) {
 			logger.log(e400.getMessage());
 			return e400.getResponse();
 		}
-
-		/*
-		 * 2. Authentic authentication_key check:
-		 * 
-		 */
-		// TODO: actually check authentication service here.
-
-		/*
-		 * 3a. Get any data from tables to complete request.
-		 * 
-		 * 1. Check if
-		 */
-
-		/*
-		 * ### Generate unique user_id number and validate its uniqueness.
-		 */
+		
 		Connection con = getRemoteConnection(context);
 		
 		try {
-			// Checks for necessary rows in tables:
-			if (!userIDExists(user_id, con)) {
-				logger.log("ERROR: 404 Not Found - user_id does not exist in database.");
-				return generate404("user_id not found in database.");
-			}
-			if (!sessionIDExists(session_id, con)) {
-				logger.log("ERROR: 404 Not Found - session_id does not exist in database.");
-				return generate404("session_id not found in database.");
+			if(!userIDExists(user_id, con)) {
+				logger.log("ERROR: 404 Not Found - user_id does not exist");
+				return generate404("user_id not found");
 			}
 			
+			if(!sessionIDExists(session_id, con)) {
+				logger.log("ERROR: 404 Not Found - session_id does not exist");
+				return generate404("session_id not found");
+			}
+
 			
-			String removeInvite = "DELETE FROM invitations WHERE receiver_id='" + user_id + "' AND invitation_session_id='" + session_id + "'";
-			Statement statement = con.createStatement();
-			statement.execute(removeInvite);
+			String insertClass = "INSERT INTO invitations VALUES ('" + user_id + "', '"
+					+ user_id2 + "', '" +  session_id + "')";
+			
+            Statement statement = con.createStatement();
+			statement.addBatch(insertClass);
+			statement.executeBatch();
 			statement.close();
-			
+
 		} catch (SQLException ex) {
 			// handle any errors
-			logger.log("SQLException: " + ex.getMessage());
-			logger.log("SQLState: " + ex.getSQLState());
-			logger.log("VendorError: " + ex.getErrorCode());
-
-			return generate500(ex.getMessage());
-
+			context.getLogger().log("SQLException: " + ex.getMessage());
+			context.getLogger().log("SQLState: " + ex.getSQLState());
+			context.getLogger().log("VendorError: " + ex.getErrorCode());
 		} finally {
 			context.getLogger().log("Closing the connection.");
 			if (con != null)
 				try {
 					con.close();
 				} catch (SQLException ignore) {
-					return generate500(ignore.getMessage());
 				}
 		}
-
+		
 		response.put("code", 201);
-		response.put("code_description", "Removed Invitations");
+		response.put("code_description", "Created");
 		return response;
 	}
-	
+
 	public static Connection getRemoteConnection(Context context) {
 		try {
 			Class.forName(System.getenv("JDBC_DRIVER"));
@@ -159,7 +144,8 @@ public class RemoveInvitation implements RequestHandler<Map<String, Object>, Map
 		return null;
 	}
 	
-	private boolean userIDExists(String user_id, Connection dbcon) throws SQLException {
+	private boolean userIDExists(String user_id, Connection dbcon) throws SQLException
+    {
 		String getUser = "SELECT user_id FROM users WHERE user_id='"+user_id+"'";
 		Statement statement = dbcon.createStatement();
 		ResultSet result = statement.executeQuery(getUser);
@@ -173,7 +159,7 @@ public class RemoveInvitation implements RequestHandler<Map<String, Object>, Map
 			statement.close();
 			return false;
 		}
-	}
+    }
 	
 	private boolean sessionIDExists(String session_id, Connection dbcon) throws SQLException
     {
@@ -190,5 +176,5 @@ public class RemoveInvitation implements RequestHandler<Map<String, Object>, Map
 			return false; 
 		}
     }
-
 }
+
