@@ -15,11 +15,10 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
-import utils.papaya.com.AuthServiceType;
 import utils.papaya.com.Exception400;
 import utils.papaya.com.Validate;
 
-public class SessionsDump implements RequestHandler<Map<String, Object>, Map<String, Object>> {
+public class ClassActivityDump implements RequestHandler<Map<String, Object>, Map<String, Object>> {
 	/** Steps to implement a generic papaya API Lambda Function:
 	 * 
 	 * 	1.	Check request body (validate) for proper format of fields.
@@ -98,36 +97,21 @@ public class SessionsDump implements RequestHandler<Map<String, Object>, Map<Str
 				
 				logger.log("Found class: " + classResult.getString("class_id") + "\n");
 				class_id = classResult.getString("class_id");
-				String getSessionInfo = "SELECT DISTINCT * "
-						+ "FROM ( "
-						+ "SELECT * "
-						+ "FROM sessions AS s "
-						+ "INNER JOIN ( "
-						+ "SELECT DISTINCT user_session_id "
-						+ "FROM users_sessions "
-						+ ") sessionCheck ON s.session_id = sessionCheck.user_session_id "
-						+ ") allSessions "
-						+ "INNER JOIN ( "
-						+ "SELECT DISTINCT class_session_id "
-						+ "FROM classes_sessions "
-						+ "WHERE session_class_id = '"+ class_id +"' "
-						+ ") classFilter ON allSessions.session_id = classFilter.class_session_id;";
+				String getActivity = "SELECT DISTINCT * FROM (SELECT * FROM classes_sessions AS cs INNER JOIN users_sessions AS us ON (cs.class_session_id=us.user_session_id AND cs.session_class_id='" + class_id + "')) tablemerged INNER JOIN users AS ut ON ut.user_id=tablemerged.session_user_id";
 				Statement sessionStatement = con.createStatement();
-				ResultSet sessionResult = sessionStatement.executeQuery(getSessionInfo);
-				logger.log(getSessionInfo);
+				ResultSet sessionResult = sessionStatement.executeQuery(getActivity);
+				logger.log(getActivity);
 				ArrayList<Map<String, Object>> sessions = new ArrayList<Map<String, Object>>();
 				while (sessionResult.next()) {
 					logger.log("made it inside while loop");
 					Map<String, Object> s = new HashMap<String, Object>();
-					s.put("session_id", sessionResult.getString("session_id"));
-					s.put("host_id", sessionResult.getString("host_id"));
-					s.put("duration", sessionResult.getInt("duration"));
-					s.put("location_desc", sessionResult.getString("location_desc"));
-					s.put("description", sessionResult.getString("description"));
-					s.put("sponsored", sessionResult.getBoolean("sponsor"));
-					s.put("location_lat", sessionResult.getFloat("location_lat"));
-					s.put("location_long", sessionResult.getFloat("location_long"));
-					s.put("start_time", sessionResult.getString("start_time"));
+					s.put("session_id", sessionResult.getString("class_session_id"));
+					s.put("active", sessionResult.getString("active"));
+					s.put("user_id", sessionResult.getInt("user_id"));
+					s.put("phone", sessionResult.getString("phone"));
+					s.put("email", sessionResult.getString("email"));
+					s.put("current_session_id", sessionResult.getBoolean("current_session_id"));
+					s.put("service", sessionResult.getFloat("service"));
 					
 					sessions.add(s);
 				}
