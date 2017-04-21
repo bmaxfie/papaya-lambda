@@ -105,20 +105,20 @@ public class GetAllSessions implements RequestHandler<Map<String, Object>, Map<S
 				
 				logger.log("Found class: " + classResult.getString("class_id") + "\n");
 				class_id = classResult.getString("class_id");
-				String getSessionInfo = "SELECT * "
+				String getSessionInfo = "SELECT DISTINCT * "
 						+ "FROM ( "
 						+ "SELECT * "
 						+ "FROM sessions AS s "
 						+ "INNER JOIN ( "
-						+ "SELECT user_session_id "
+						+ "SELECT DISTINCT user_session_id "
 						+ "FROM users_sessions "
-						+ ") activeCheck ON s.session_id = activeCheck.user_session_id "
-						+ ") allActive "
+						+ ") sessionCheck ON s.session_id = sessionCheck.user_session_id "
+						+ ") allSessions "
 						+ "INNER JOIN ( "
-						+ "SELECT class_session_id "
+						+ "SELECT DISTINCT class_session_id "
 						+ "FROM classes_sessions "
 						+ "WHERE session_class_id = '"+ class_id +"' "
-						+ ") classFilter ON allActive.session_id = classFilter.class_session_id;";
+						+ ") classFilter ON allSessions.session_id = classFilter.class_session_id;";
 				Statement sessionStatement = con.createStatement();
 				ResultSet sessionResult = sessionStatement.executeQuery(getSessionInfo);
 				logger.log(getSessionInfo);
