@@ -1,4 +1,4 @@
-package classes.papaya.com;
+package website.papaya.com;
 
 import static utils.papaya.com.ResponseGenerator.generate500;
 
