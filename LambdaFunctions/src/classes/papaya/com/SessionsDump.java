@@ -41,7 +41,6 @@ public class SessionsDump implements RequestHandler<Map<String, Object>, Map<Str
 		this.logger = context.getLogger();
 		Map<String, Object> response = new HashMap<String, Object>();
 		ArrayList<Map<String, Object>> classes = new ArrayList<Map<String, Object>>();
-		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required request fields:
 		String professor_access_key = "";
 		//
@@ -65,8 +64,6 @@ public class SessionsDump implements RequestHandler<Map<String, Object>, Map<Str
 			querystring = Validate.field(input, "params");
 			querystring = Validate.field(querystring, "querystring");
 		
-			// 2. validate 'service' field is a recognizable type
-			service_type = Validate.service(querystring);
 			// 3. validate 'authentication_key' is of length allowed?
 			// TODO: Determine more strict intro rules
 			professor_access_key = Validate.access_key(querystring);
