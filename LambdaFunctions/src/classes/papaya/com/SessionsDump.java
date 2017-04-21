@@ -91,17 +91,13 @@ public class SessionsDump implements RequestHandler<Map<String, Object>, Map<Str
 			 * 
 			 * 		1. Update authentication_key for user_id.
 			 */
-			String getClassInfo = "SELECT user_role, class_id, classname, description FROM classes AS c, users_classes AS uc "
-					+ "WHERE c.professor_access_key='" + professor_access_key + "' AND c.class_id=uc.user_class_id";
+			String getClassID = "SELECT class_id FROM classes WHERE c.professor_access_key='" + professor_access_key + "'";
 			Statement classStatement = con.createStatement();
-			ResultSet classResult = classStatement.executeQuery(getClassInfo);
+			ResultSet classResult = classStatement.executeQuery(getClassID);
 			
 			if (classResult.next()) {
 				Map<String, Object> c = new HashMap<String, Object>();
 				c.put("class_id", classResult.getString("class_id"));
-				c.put("classname", classResult.getString("classname"));
-				c.put("descriptions", classResult.getString("description"));
-				c.put("user_role", classResult.getInt("user_role"));
 				
 				logger.log("Found class: " + classResult.getString("class_id") + "\n");
 				class_id = classResult.getString("class_id");
@@ -169,8 +165,7 @@ public class SessionsDump implements RequestHandler<Map<String, Object>, Map<Str
 		
 		response.put("code", 200);
 		response.put("code_description", "OK");
-		response.put("user_id", user_id);
-		response.put("authentication_key", authentication_key);
+		response.put("class_id", class_id);
 		return response;
 	}
     
