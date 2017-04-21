@@ -79,7 +79,7 @@ public class CreatePost implements RequestHandler<Map<String, Object>, Map<Strin
 			service_type = Validate.service(json);
 			authentication_key = Validate.authentication_key(json, service_type);
 			service_user_id = Validate.service_user_id(json, service_type);
-			start_time = Validate.start_time(json);
+			//start_time = Validate.start_time(json);
 			message = Validate.message(json, "message");
 		} catch (Exception400 e400) {
 			logger.log(e400.getMessage());
