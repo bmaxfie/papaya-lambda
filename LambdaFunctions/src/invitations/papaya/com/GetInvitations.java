@@ -129,7 +129,11 @@ public class GetInvitations implements RequestHandler<Map<String, Object>, Map<S
 			
 			result.close();
 			statement.close();
-
+			
+			String deleteInvitations = "DELETE FROM invitations WHERE receiver_user_id='" + user_id + "'";
+			statement = con.createStatement();
+			statement.execute(deleteInvitations);
+			statement.close();
 
 		} catch (SQLException ex) {
 			// handle any errors

@@ -61,16 +61,17 @@ public class RemoveInvitation implements RequestHandler<Map<String, Object>, Map
 		
 		try {
 			// Find Paths:
-			json = Validate.field(input, "body_json");
+//			json = Validate.field(input, "body_json");
 			path = Validate.field(input, "params");
+			querystring = Validate.field(path, "querystring");
 			path = Validate.field(path, "path");
 			
-			user_id = Validate.user_id(json);
+			user_id = Validate.user_id(querystring);
 			session_id = Validate.session_id(path);
 			
-			service_type = Validate.service(json);
-			authentication_key = Validate.authentication_key(json, service_type);
-			service_user_id = Validate.service_user_id(json, service_type);
+			service_type = Validate.service(querystring);
+			authentication_key = Validate.authentication_key(querystring, service_type);
+			service_user_id = Validate.service_user_id(querystring, service_type);
 			
 		} catch (Exception400 e400) {
 			logger.log(e400.getMessage());
