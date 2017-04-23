@@ -34,19 +34,23 @@
 
     <!-- Header -->
     <header class="background">
+        <div class="loading-wrapper">
+            <i class="fa fa-refresh fa-spin fa-3x fa-fw"></i>
+            <span class="sr-only">Loading...</span>
+        </div>
         <div class="content-wrapper">
             <div class="class-info two-thirds-width grey-trans">
                 <h1>Class Info:</h1>
                 <br>
-                <label class="row1">Name:</label><p class="ro2" id="class-name">CS 307</p>
-                <label class="row1">Description:</label><p class="row2" id="class-description">Computer Science - Systems Programming</p>
-                <label class="row1">ID:</label><p class="row2" id="class-id">sowinsoljsjw0e02tkjs3jtsjdgl/pj]dsjiogj==</p>
-                <label class="row1">Professor Access Key:</label><p class="row2" id="professor-access-key">jasfjwoi23u28ojwlejf;oih;wljwwwef==</p>
-                <label class="row1">TA Access Key:</label><p class="row2" id="ta-access-key">oergh;oijlkjdoailfkwejfo;sijlflksj;ejfoij==</p>
-                <label class="row1">Student Access Key:</label><p class="row2" id="student-access-key">hoiefisd98u298uslkjfs;ijfjowiseeghhhhwj==</p>
+                <label class="row1">Name:</label><p class="ro2" id="class-name"></p>
+                <label class="row1">Description:</label><p class="row2" id="class-description"></p>
+                <label class="row1">ID:</label><p class="row2" id="class-id"></p>
+                <label class="row1">Professor Access Key:</label><p class="row2" id="professor-access-key"></p>
+                <label class="row1">TA Access Key:</label><p class="row2" id="ta-access-key"></p>
+                <label class="row1">Student Access Key:</label><p class="row2" id="student-access-key"></p>
             </div>
             <div class="class-table one-third-width darker-grey-trans full-height">
-                <h3 class="black">Download Options:</h2>
+                <h2 class="black">Download Options:</h2>
                 <br>
                 <ul>
                     <li class="btn btn-dark download">Download Students</li>
@@ -57,14 +61,6 @@
             </div>
         </div>
     </header>
-    <!--<div class="text-vertical-center one-third-width full-height">
-        <div class="login-box">
-            <h1><i>papaya</i></h1>
-            <label class="login-label">Access key:</label>
-            <input type="text" class="login-input">
-            <div class="btn-dark submit">Login</div>
-        </div>
-    </div>-->
 
     <!-- jQuery -->
     <script src="js/jquery.js"></script>
@@ -74,31 +70,86 @@
 
     <!-- Custom Theme JavaScript -->
     <script>
-    //#to-top button appears after scrolling
-    var fixed = false;
-    $(document).scroll(function() {
-        if ($(this).scrollTop() > 250) {
-            if (!fixed) {
-                fixed = true;
-                // $('#to-top').css({position:'fixed', display:'block'});
-                $('#to-top').show("slow", function() {
-                    $('#to-top').css({
-                        position: 'fixed',
-                        display: 'block'
-                    });
-                });
+        // GLOBALS:
+        var response = null;
+        var class_name_dom, class_id_dom, class_description_dom, student_key_dom, ta_key_dom, professor_key_dom;
+        var loaded = false;
+
+        // Load URL parameters:
+        var qs = (function(a) {
+            if (a == "") return {};
+            var b = {};
+            for (var i = 0; i < a.length; ++i)
+            {
+                var p=a[i].split('=', 2);
+                if (p.length == 1)
+                    b[p[0]] = "";
+                else
+                    b[p[0]] = decodeURIComponent(p[1].replace(/\+/g, " "));
             }
-        } else {
-            if (fixed) {
-                fixed = false;
-                $('#to-top').hide("slow", function() {
-                    $('#to-top').css({
-                        display: 'none'
-                    });
-                });
-            }
+            return b;
+        })(window.location.search.substr(1).split('&'));
+        access_key = qs["access_key"].replace(new RegExp("=", "g"),"%3D");
+        access_key = access_key.replace(new RegExp("\/", "g"),"%2F");
+
+
+        // Redirect IF 'access_key' parameter doesn't exist
+        if (!access_key) {
+            window.location.href = "login.html?error=true";
         }
-    });
+
+        // API call to get class data
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                response = JSON.parse(this.responseText);
+                console.log(response);
+                if (response.code == 404)
+                    window.location.href = "login.html?error=true";
+
+                if (loaded == true) 
+                    fillTable();
+            }
+        };
+        xhttp.open("GET", "https://a1ii3mxcs8.execute-api.us-west-2.amazonaws.com/Beta/website?access_key=" + access_key, true);
+        xhttp.send();
+
+
+        // ON PAGE READY:
+        $('document').ready(function() {
+            class_name_dom = document.getElementById('class-name');
+            class_description_dom = document.getElementById('class-description');
+            class_id_dom = document.getElementById('class-id');
+            student_key_dom = document.getElementById('student-access-key');
+            ta_key_dom = document.getElementById('ta-access-key');
+            professor_key_dom = document.getElementById('professor-access-key');
+
+            loaded = true;
+
+            if (response != null)
+                fillTable();
+        });
+
+        // Fill class data table if LOADED and API call complete:
+        function fillTable() {
+            if (response == null) {
+                console.log("fillTable() called but response is null.");
+                return;
+            }
+            class_name_dom.innerHTML = response.classname;
+            class_id_dom.innerHTML = response.class_id;
+            class_description_dom.innerHTML = response.description;
+            student_key_dom.innerHTML = response.student_access_key;
+            ta_key_dom.innerHTML = response.ta_access_key;
+            professor_key_dom.innerHTML = response.professor_access_key;
+
+            document.getElementsByClassName("content-wrapper")[0].style.display = "block";
+            document.getElementsByClassName("loading-wrapper")[0].style.display = "none";
+        };
+
+        // Download CSV from API call:
+
+
     </script>
 
 </body>

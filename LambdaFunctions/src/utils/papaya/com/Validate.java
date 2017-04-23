@@ -318,6 +318,8 @@ public class Validate
 		} else if (access_key.length() > 45) {
 			access_key = access_key.substring(0, 45);
 		}
+		access_key = access_key.replaceAll("%2F", "/");
+		access_key = access_key.replaceAll("%3D", "=");
 		
 		return access_key;
 	}

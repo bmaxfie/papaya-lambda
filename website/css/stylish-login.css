@@ -83,11 +83,24 @@ body {
     width: 300px;
 }
 
+.on-spaces {
+    display: none;
+    visibility: hidden;
+    color: red;
+}
+
+.on-not-found {
+    display: none;
+    visibility: hidden;
+    color: red;
+}
+
 .submit {
     width: 120px;
     padding: 10px 30px;
     font-size: 18px;
     margin: auto;
+    border: none;
 }
 
 .two-thirds-width {

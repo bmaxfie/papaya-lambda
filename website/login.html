@@ -38,8 +38,10 @@
         <div class="login-box">
             <h1><i>papaya</i></h1>
             <label class="login-label">Access key:</label>
-            <input type="text" class="login-input">
-            <div class="btn-dark submit">Login</div>
+            <input type="text" class="login-input" autofocus>
+            <div class="help-block on-spaces">No spaces in access keys!</div>
+            <div class="help-block on-not-found">Access Key Invalid!</div>
+            <button class="btn-dark submit" onclick="attempt_to_log_in()">Login</button>
         </div>
     </div>
 
@@ -51,31 +53,56 @@
 
     <!-- Custom Theme JavaScript -->
     <script>
-    //#to-top button appears after scrolling
-    var fixed = false;
-    $(document).scroll(function() {
-        if ($(this).scrollTop() > 250) {
-            if (!fixed) {
-                fixed = true;
-                // $('#to-top').css({position:'fixed', display:'block'});
-                $('#to-top').show("slow", function() {
-                    $('#to-top').css({
-                        position: 'fixed',
-                        display: 'block'
-                    });
-                });
+        var qs = (function(a) {
+            if (a == "") return {};
+            var b = {};
+            for (var i = 0; i < a.length; ++i)
+            {
+                var p=a[i].split('=', 2);
+                if (p.length == 1)
+                    b[p[0]] = "";
+                else
+                    b[p[0]] = decodeURIComponent(p[1].replace(/\+/g, " "));
             }
-        } else {
-            if (fixed) {
-                fixed = false;
-                $('#to-top').hide("slow", function() {
-                    $('#to-top').css({
-                        display: 'none'
-                    });
-                });
+            return b;
+        })(window.location.search.substr(1).split('&'));
+
+        $('document').ready(function() {
+            var on_not_found = document.getElementsByClassName('on-not-found')[0];
+            var on_spaces = document.getElementsByClassName('on-spaces')[0];
+
+            if (qs["error"] &&qs["error"].localeCompare("true") == 0) {
+                console.log("Error = true");
+                on_spaces.style.visibility = "hidden";
+                on_spaces.style.display = "none";
+                on_not_found.style.visibility = "visible";
+                on_not_found.style.display = "block";
+            } else {
+                console.log("Error = false");
+                on_not_found.style.visibility = "hidden";
+                on_not_found.style.display = "none";
+                on_spaces.style.visibility = "hidden";
+                on_spaces.style.display = "block";
             }
-        }
-    });
+        });
+        
+        function attempt_to_log_in() {
+            var on_not_found = document.getElementsByClassName('on-not-found')[0];
+            var on_spaces = document.getElementsByClassName('on-spaces')[0];
+
+            var access_key = document.getElementsByClassName('login-input')[0].value;
+            if (!access_key || access_key.indexOf(' ') > -1) {
+                on_spaces.style.visibility = "visible";
+                on_spaces.style.display = "block";
+                on_not_found.style.visibility = "hidden";
+                on_not_found.style.display = "none";
+            }
+            else {
+                access_key = access_key.replace(new RegExp("=", "g"),"%3D");
+                access_key = access_key.replace(new RegExp("\/", "g"),"%2F");
+                window.location.href = "landing.html?access_key=" + access_key;
+            }
+        };
     </script>
 
 </body>

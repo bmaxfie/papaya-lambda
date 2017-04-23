@@ -1,4 +1,6 @@
-package users.papaya.com;
+package website.papaya.com;
+
+import static utils.papaya.com.ResponseGenerator.generate500;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -12,15 +14,11 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
-import utils.papaya.com.AuthServiceType;
-import utils.papaya.com.UIDGenerator;
-import utils.papaya.com.Validate;
-import utils.papaya.com.Authentication;
 import utils.papaya.com.Exception400;
+import utils.papaya.com.ResponseGenerator;
+import utils.papaya.com.Validate;
 
-import static utils.papaya.com.ResponseGenerator.*;
-
-public class CreateUser implements RequestHandler<Map<String, Object>, Map<String, Object>> {
+public class GetClassInfo implements RequestHandler<Map<String, Object>, Map<String, Object>> {
 
 	/** Steps to implement a generic papaya API Lambda Function:
 	 * 
@@ -41,25 +39,16 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 		
 		this.context = context;
 		this.logger = context.getLogger();
-		Map<String, Object> json;
 		Map<String, Object> response = new HashMap<String, Object>();
-		AuthServiceType service_type = AuthServiceType.NONE;
-		String user_id = "";
+		Map<String, Object> querystring;
 		// Required request fields:
-		String username, authentication_key, service_user_id;
-		// Optional request fields:
-		long phone = 0;
-		String email = null;
+		String professor_access_key;
 		
 		/*
 		 * 1. Check request body (validate) for proper format of fields:
 		 * 		
 		 * 		fields must exist:
-		 * 			username
-		 * 			phone (optional)
-		 * 			email (optional)
-		 * 			authentication_key
-		 * 			service
+		 * 			access_key
 		 * 
 		 * 		// TODO: Check for SQL INJECTION!
 		 */
@@ -67,65 +56,42 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 		
 		try {
 			// Find Path:
-			json = Validate.field(input, "body_json");
+			querystring = Validate.field(input, "params");
+			querystring = Validate.field(querystring, "querystring");
 			
 			// Validate required fields:
-			username = Validate.username(json);
-			service_type = Validate.service(json);
-			authentication_key = Validate.authentication_key(json, service_type);
-			service_user_id = Validate.service_user_id(json, service_type);
+			professor_access_key = Validate.access_key(querystring);
 		} catch (Exception400 e400) {
 			logger.log(e400.getMessage());
 			return e400.getResponse();
 		}
-		// Try to validate optional fields:
-		try {
-			phone = Validate.phone(json);
-		} catch (Exception400 e400) {
-			logger.log("phone not found, but not required.");
-		}
-		try {
-			email = Validate.email(json);
-		} catch (Exception400 e400) {
-			logger.log("email not found, but not required.");
-		}
-		
-		/*
-		 * 2. Authentic authentication_key check:
-		 * 
-		 */
-		// TODO: actually check authentication service here.
-		
 		
 		/*
 		 * 3a. Get any data from tables to complete request.
 		 * 		
 		 * 		1. Check if 
 		 */
-		
-		/*
-		 * ### Generate unique user_id number and validate its uniqueness.
-		 */
-		user_id = UIDGenerator.generateUID(username);
-		boolean exists = false;
 		Connection con = getRemoteConnection(context);
 		
 		try {
 			
-			for (int i = 0; (exists = userIDExists(user_id, con)) && i < 3; i++) {
-				user_id = UIDGenerator.generateUID(username);
+			String getClassInfo = "SELECT * FROM classes WHERE professor_access_key='" + professor_access_key + "'";
+			Statement statement = con.createStatement();
+			ResultSet result = statement.executeQuery(getClassInfo);
+			if (result.next() && result.isLast()) {
+				response.put("class_id", result.getString("class_id"));
+				response.put("classname", result.getString("classname"));
+				response.put("student_access_key", result.getString("student_access_key"));
+				response.put("ta_access_key", result.getString("ta_access_key"));
+				response.put("professor_access_key", result.getString("professor_access_key"));
+				response.put("description", result.getString("description"));
 			}
-			if (exists) {
-				logger.log("ERROR: 500 Internal Server Error - Returned to client. Could not generate a UID on 3 tries.");
-				return generate500("generateUID() failed 3 times. Try recalling.");
+			else {
+				logger.log("Either there are multiple results under single access key or no result for access key.");
+				return ResponseGenerator.generate404("Either there are multiple classes under that access key or there is no class for that access key.");
 			}
 			
-			String insertUser = "INSERT INTO users VALUES ('" + user_id + "', '"
-					+ username + "', " + phone + ", " + "'"
-					+ email + "', '" + "', '" + service_type.toString() + "')";
-			Statement statement = con.createStatement();
-			statement.addBatch(insertUser);
-			statement.executeBatch();
+			result.close();
 			statement.close();
 
 		} catch (SQLException ex) {
@@ -146,10 +112,8 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 				}
 		}
 		
-		response.put("code", 201);
-		response.put("code_description", "Created");
-		response.put("user_id", user_id);
-		response.put("authentication_key", authentication_key);
+		response.put("code", 200);
+		response.put("code_description", "OK");
 		return response;
 	}
     
@@ -177,23 +141,5 @@ public class CreateUser implements RequestHandler<Map<String, Object>, Map<Strin
 		}
 		return null;
 	}
-    
-    
-    private boolean userIDExists(String user_id, Connection dbcon) throws SQLException
-    {
-		String getUser = "SELECT user_id FROM users WHERE user_id='"+user_id+"'";
-		Statement statement = dbcon.createStatement();
-		ResultSet result = statement.executeQuery(getUser);
-		if (result.next()) {
-			result.close();
-			statement.close();
-			return true;
-		}
-		else {
-			result.close();
-			statement.close();
-			return false;
-		}
-    }
-    
+
 }
