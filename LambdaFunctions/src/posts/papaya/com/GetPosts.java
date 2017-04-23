@@ -1,4 +1,4 @@
-package users.papaya.com;
+package posts.papaya.com;
 
 import static utils.papaya.com.ResponseGenerator.generate500;
 
@@ -19,7 +19,8 @@ import utils.papaya.com.AuthServiceType;
 import utils.papaya.com.Exception400;
 import utils.papaya.com.Validate;
 
-public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<String, Object>> {
+public class GetPosts implements RequestHandler<Map<String, Object>, Map<String, Object>>{
+
 	/** Steps to implement a generic papaya API Lambda Function:
 	 * 
 	 * 	1.	Check request body (validate) for proper format of fields.
@@ -40,18 +41,19 @@ public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<
 		this.context = context;
 		this.logger = context.getLogger();
 		Map<String, Object> response = new HashMap<String, Object>();
-		ArrayList<Map<String, Object>> classes = new ArrayList<Map<String, Object>>();
 		AuthServiceType service_type = AuthServiceType.NONE;
+		Map<String, Object> json, path;
 		// Required request fields:
-		String user_id = "", authentication_key = "", class_id = "", service_user_id = "";
+		String user_id = "", authentication_key = "", service_user_id = "";
+		String session_id = "";
 		
 		/*
 		 * 1. Check request body (validate) for proper format of fields:
 		 * 		
-		 * 		fields must exist in string URL parameters:
+		 * 		fields must exist in string path parameters:
 		 * 			user_id
-		 * 			authentication_key
 		 * 			service
+		 * 			authentication_key
 		 * 
 		 * 		// TODO: Check for SQL INJECTION!
 		 */
@@ -60,17 +62,22 @@ public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<
 		Map<String, Object> querystring;
 		try {
 			// Find Paths:
-			querystring = Validate.field(input, "params");
+			querystring = Validate.field(input, "params");			
+			path = Validate.field(querystring, "path");
+			
 			querystring = Validate.field(querystring, "querystring");
+			
+
 			
 			// 1. validate 'user_id'
 			user_id = Validate.user_id(querystring);
 			// 2. validate 'service' field is a recognizable type
-			service_type = Validate.service(querystring);
+			service_type = Validate.service(querystring);				
 			// 3. validate 'authentication_key' is of length allowed?
 			// TODO: Determine more strict intro rules
 			authentication_key = Validate.authentication_key(querystring, service_type);
 			service_user_id = Validate.service_user_id(querystring, service_type);
+			session_id = Validate.session_id(path);
 		} catch (Exception400 e400) {
 			logger.log(e400.getMessage());
 			return e400.getResponse();
@@ -92,63 +99,33 @@ public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<
 			 * 
 			 * 		1. Update authentication_key for user_id.
 			 */
-			String getClassInfo = "SELECT user_role, class_id, classname, description FROM classes AS c, users_classes AS uc WHERE uc.class_user_id='" + user_id + "' AND c.class_id=uc.user_class_id";
-			Statement classStatement = con.createStatement();
-			ResultSet classResult = classStatement.executeQuery(getClassInfo);
+						
+			/*
+			 * 
+			 * SQL command: returns a list of friends for user: user_id
+			 * 
+			 */
+
+			String getPosts = "SELECT * FROM posts WHERE post_session_id='" + session_id + "'";
+			Statement statement = con.createStatement();
+			ResultSet result = statement.executeQuery(getPosts);
 			
-			while (classResult.next()) {
-				Map<String, Object> c = new HashMap<String, Object>();
-				c.put("class_id", classResult.getString("class_id"));
-				c.put("classname", classResult.getString("classname"));
-				c.put("descriptions", classResult.getString("description"));
-				c.put("user_role", classResult.getInt("user_role"));
-				
-				logger.log("Found class: " + classResult.getString("class_id") + "\n");
-				class_id = classResult.getString("class_id");
-				String getSessionInfo = "SELECT DISTINCT * "
-						+ "FROM ( "
-						+ "SELECT * "
-						+ "FROM sessions AS s "
-						+ "INNER JOIN ( "
-						+ "SELECT DISTINCT user_session_id "
-						+ "FROM users_sessions "
-						+ "WHERE active = 1 "
-						+ ") activeCheck ON s.session_id = activeCheck.user_session_id "
-						+ ") allActive "
-						+ "INNER JOIN ( "
-						+ "SELECT DISTINCT class_session_id "
-						+ "FROM classes_sessions "
-						+ "WHERE session_class_id = '"+ class_id +"' "
-						+ ") classFilter ON allActive.session_id = classFilter.class_session_id;";
-				Statement sessionStatement = con.createStatement();
-				ResultSet sessionResult = sessionStatement.executeQuery(getSessionInfo);
-				logger.log(getSessionInfo);
-				ArrayList<Map<String, Object>> sessions = new ArrayList<Map<String, Object>>();
-				while (sessionResult.next()) {
-					logger.log("made it inside while loop");
-					Map<String, Object> s = new HashMap<String, Object>();
-					s.put("session_id", sessionResult.getString("session_id"));
-					s.put("host_id", sessionResult.getString("host_id"));
-					s.put("duration", sessionResult.getInt("duration"));
-					s.put("location_desc", sessionResult.getString("location_desc"));
-					s.put("description", sessionResult.getString("description"));
-					s.put("sponsored", sessionResult.getBoolean("sponsor"));
-					s.put("location_lat", sessionResult.getFloat("location_lat"));
-					s.put("location_long", sessionResult.getFloat("location_long"));
-					s.put("start_time", sessionResult.getString("start_time"));
-					
-					sessions.add(s);
-				}
-				c.put("sessions", sessions);
-				classes.add(c);
-				
-				sessionResult.close();
-				sessionStatement.close();
+			ArrayList<Map<String, Object>> posts = new ArrayList<Map<String, Object>>();
+			while (result.next()) {
+				Map<String, Object> post = new HashMap<String, Object>();
+				post.put("post_id", result.getString("post_id"));
+				post.put("post_user_role", result.getString("post_user_role"));
+				post.put("timestamp", result.getString("timestamp"));
+				post.put("message", result.getString("message"));
+				post.put("visibility", result.getString("visibility"));
+				posts.add(post);
 			}
-			response.put("classes", classes);
 			
-			classResult.close();
-			classStatement.close();
+			response.put("posts", posts.toArray());
+			
+			result.close();
+			statement.close();
+
 
 		} catch (SQLException ex) {
 			// handle any errors
@@ -172,6 +149,7 @@ public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<
 		response.put("code_description", "OK");
 		response.put("user_id", user_id);
 		response.put("authentication_key", authentication_key);
+		
 		return response;
 	}
     
@@ -199,5 +177,5 @@ public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<
 		}
 		return null;
 	}
-
+	
 }

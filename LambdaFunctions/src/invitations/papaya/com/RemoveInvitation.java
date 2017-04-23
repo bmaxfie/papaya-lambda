@@ -1,14 +1,13 @@
-package classes.sessions.papaya.com;
+package invitations.papaya.com;
 
-import static utils.papaya.com.ResponseGenerator.*;
+import static utils.papaya.com.ResponseGenerator.generate404;
+import static utils.papaya.com.ResponseGenerator.generate500;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,12 +16,10 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
 import utils.papaya.com.AuthServiceType;
-import utils.papaya.com.Authentication;
 import utils.papaya.com.Exception400;
-import utils.papaya.com.UIDGenerator;
 import utils.papaya.com.Validate;
 
-public class RemoveUser implements RequestHandler<Map<String, Object>, Map<String, Object>> {
+public class RemoveInvitation implements RequestHandler<Map<String, Object>, Map<String, Object>> {
 	/**
 	 * Steps to implement a generic papaya API Lambda Function:
 	 * 
@@ -49,8 +46,7 @@ public class RemoveUser implements RequestHandler<Map<String, Object>, Map<Strin
 		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required fields:
 		String authentication_key, service_user_id, service;
-		String user_id = "";
-		String current_session_id = ""; //does not need to be passed in through json, obtained from sql
+		String user_id = "", session_id = "";
 
 		
 		// Optional request fields:
@@ -66,8 +62,12 @@ public class RemoveUser implements RequestHandler<Map<String, Object>, Map<Strin
 		try {
 			// Find Paths:
 			json = Validate.field(input, "body_json");
+			path = Validate.field(input, "params");
+			path = Validate.field(path, "path");
 			
 			user_id = Validate.user_id(json);
+			session_id = Validate.session_id(path);
+			
 			service_type = Validate.service(json);
 			authentication_key = Validate.authentication_key(json, service_type);
 			service_user_id = Validate.service_user_id(json, service_type);
@@ -93,81 +93,23 @@ public class RemoveUser implements RequestHandler<Map<String, Object>, Map<Strin
 		 * ### Generate unique user_id number and validate its uniqueness.
 		 */
 		Connection con = getRemoteConnection(context);
-
+		
 		try {
 			// Checks for necessary rows in tables:
 			if (!userIDExists(user_id, con)) {
 				logger.log("ERROR: 404 Not Found - user_id does not exist in database.");
 				return generate404("user_id not found in database.");
 			}
-
-			//gets the user's current session
-			String getCurrentSession = "SELECT current_session_id FROM users WHERE user_id='" + user_id + "'";
+			if (!sessionIDExists(session_id, con)) {
+				logger.log("ERROR: 404 Not Found - session_id does not exist in database.");
+				return generate404("session_id not found in database.");
+			}
+			
+			
+			String removeInvite = "DELETE FROM invitations WHERE receiver_id='" + user_id + "' AND invitation_session_id='" + session_id + "'";
 			Statement statement = con.createStatement();
-			ResultSet result = statement.executeQuery(getCurrentSession);
-			if(result.next()) {
-				current_session_id = result.getString("current_session_id");
-			}
-			result.close();
+			statement.execute(removeInvite);
 			statement.close();
-			
-			if(current_session_id.equals("")) {
-				logger.log("ERROR: 404 Not Found - user is not currently in a session.");
-				return generate404("user is not currently in a session.");
-			}
-			
-			//TODO need to check if current_session_id matches a session_id in the sessions or user_sessions table?
-			
-			String removeUser = "UPDATE users_sessions SET active=0 WHERE session_user_id='" + user_id + "' AND user_session_id='" + current_session_id + "'";
-			statement = con.createStatement();
-			statement.execute(removeUser);
-			statement.close();
-
-			//sets the current session of the user back to nothing as they are no longer in a session
-			String updateUser = "UPDATE users SET current_session_id='' WHERE user_id='" + user_id + "'";
-			statement = con.createStatement();
-			statement.execute(updateUser);
-			statement.close();
-			
-			String checkIfEmpty = "SELECT active, session_user_id FROM users_sessions WHERE user_session_id='" + current_session_id + "'";
-			statement = con.createStatement();
-			result = statement.executeQuery(checkIfEmpty);
-			boolean stillExists = false;
-			String newHostIfNeeded = "";
-			while(result.next()) {
-				if(result.getString("active") == "1") {
-					String idResult = result.getString("session_user_id");
-					if(!idResult.equals(user_id)) {
-						newHostIfNeeded = idResult;
-						stillExists = true;
-					}
-				}
-
-			}
-			result.close();
-			statement.close();
-			logger.log("After check if empty \n");
-			//if the user is the study session host
-			String isUserHost = "SELECT host_id FROM sessions WHERE session_id='" + current_session_id + "'";
-			statement = con.createStatement();
-			result = statement.executeQuery(isUserHost);
-			boolean userIsHost = false;
-			if(result.next()) {
-				if(result.getString("host_id").equals(user_id)) {
-					userIsHost = true;
-				}
-			}
-			result.close();
-			statement.close();
-
-			if(stillExists && userIsHost) {
-				//change host to newHostIfNeeded
-				String transferHost = "UPDATE sessions SET host_id='" + newHostIfNeeded + "' WHERE session_id='" + current_session_id + "'";
-				statement = con.createStatement();
-				statement.execute(transferHost);
-				statement.close();
-			}
-			logger.log("after transferhost\n");
 			
 		} catch (SQLException ex) {
 			// handle any errors
@@ -188,8 +130,7 @@ public class RemoveUser implements RequestHandler<Map<String, Object>, Map<Strin
 		}
 
 		response.put("code", 201);
-		response.put("code_description", "Removed User from Session");
-		response.put("current_session_id", current_session_id);
+		response.put("code_description", "Removed Invitations");
 		return response;
 	}
 	

@@ -1,4 +1,4 @@
-package users.papaya.com;
+package website.papaya.com;
 
 import static utils.papaya.com.ResponseGenerator.generate500;
 
@@ -15,11 +15,10 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
-import utils.papaya.com.AuthServiceType;
 import utils.papaya.com.Exception400;
 import utils.papaya.com.Validate;
 
-public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<String, Object>> {
+public class ClassActivityDump implements RequestHandler<Map<String, Object>, Map<String, Object>> {
 	/** Steps to implement a generic papaya API Lambda Function:
 	 * 
 	 * 	1.	Check request body (validate) for proper format of fields.
@@ -41,9 +40,10 @@ public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<
 		this.logger = context.getLogger();
 		Map<String, Object> response = new HashMap<String, Object>();
 		ArrayList<Map<String, Object>> classes = new ArrayList<Map<String, Object>>();
-		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required request fields:
-		String user_id = "", authentication_key = "", class_id = "", service_user_id = "";
+		String professor_access_key = "";
+		//
+		String class_id = "";
 		
 		/*
 		 * 1. Check request body (validate) for proper format of fields:
@@ -62,15 +62,10 @@ public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<
 			// Find Paths:
 			querystring = Validate.field(input, "params");
 			querystring = Validate.field(querystring, "querystring");
-			
-			// 1. validate 'user_id'
-			user_id = Validate.user_id(querystring);
-			// 2. validate 'service' field is a recognizable type
-			service_type = Validate.service(querystring);
+		
 			// 3. validate 'authentication_key' is of length allowed?
 			// TODO: Determine more strict intro rules
-			authentication_key = Validate.authentication_key(querystring, service_type);
-			service_user_id = Validate.service_user_id(querystring, service_type);
+			professor_access_key = Validate.access_key(querystring);
 		} catch (Exception400 e400) {
 			logger.log(e400.getMessage());
 			return e400.getResponse();
@@ -92,50 +87,31 @@ public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<
 			 * 
 			 * 		1. Update authentication_key for user_id.
 			 */
-			String getClassInfo = "SELECT user_role, class_id, classname, description FROM classes AS c, users_classes AS uc WHERE uc.class_user_id='" + user_id + "' AND c.class_id=uc.user_class_id";
+			String getClassID = "SELECT class_id FROM classes WHERE professor_access_key='" + professor_access_key + "'";
 			Statement classStatement = con.createStatement();
-			ResultSet classResult = classStatement.executeQuery(getClassInfo);
+			ResultSet classResult = classStatement.executeQuery(getClassID);
 			
-			while (classResult.next()) {
+			if (classResult.next()) {
 				Map<String, Object> c = new HashMap<String, Object>();
 				c.put("class_id", classResult.getString("class_id"));
-				c.put("classname", classResult.getString("classname"));
-				c.put("descriptions", classResult.getString("description"));
-				c.put("user_role", classResult.getInt("user_role"));
 				
 				logger.log("Found class: " + classResult.getString("class_id") + "\n");
 				class_id = classResult.getString("class_id");
-				String getSessionInfo = "SELECT DISTINCT * "
-						+ "FROM ( "
-						+ "SELECT * "
-						+ "FROM sessions AS s "
-						+ "INNER JOIN ( "
-						+ "SELECT DISTINCT user_session_id "
-						+ "FROM users_sessions "
-						+ "WHERE active = 1 "
-						+ ") activeCheck ON s.session_id = activeCheck.user_session_id "
-						+ ") allActive "
-						+ "INNER JOIN ( "
-						+ "SELECT DISTINCT class_session_id "
-						+ "FROM classes_sessions "
-						+ "WHERE session_class_id = '"+ class_id +"' "
-						+ ") classFilter ON allActive.session_id = classFilter.class_session_id;";
+				String getActivity = "SELECT DISTINCT * FROM (SELECT * FROM classes_sessions AS cs INNER JOIN users_sessions AS us ON (cs.class_session_id=us.user_session_id AND cs.session_class_id='" + class_id + "')) tablemerged INNER JOIN users AS ut ON ut.user_id=tablemerged.session_user_id";
 				Statement sessionStatement = con.createStatement();
-				ResultSet sessionResult = sessionStatement.executeQuery(getSessionInfo);
-				logger.log(getSessionInfo);
+				ResultSet sessionResult = sessionStatement.executeQuery(getActivity);
+				logger.log(getActivity);
 				ArrayList<Map<String, Object>> sessions = new ArrayList<Map<String, Object>>();
 				while (sessionResult.next()) {
 					logger.log("made it inside while loop");
 					Map<String, Object> s = new HashMap<String, Object>();
-					s.put("session_id", sessionResult.getString("session_id"));
-					s.put("host_id", sessionResult.getString("host_id"));
-					s.put("duration", sessionResult.getInt("duration"));
-					s.put("location_desc", sessionResult.getString("location_desc"));
-					s.put("description", sessionResult.getString("description"));
-					s.put("sponsored", sessionResult.getBoolean("sponsor"));
-					s.put("location_lat", sessionResult.getFloat("location_lat"));
-					s.put("location_long", sessionResult.getFloat("location_long"));
-					s.put("start_time", sessionResult.getString("start_time"));
+					s.put("session_id", sessionResult.getString("class_session_id"));
+					s.put("active", sessionResult.getString("active"));
+					s.put("user_id", sessionResult.getInt("user_id"));
+					s.put("phone", sessionResult.getString("phone"));
+					s.put("email", sessionResult.getString("email"));
+					s.put("current_session_id", sessionResult.getBoolean("current_session_id"));
+					s.put("service", sessionResult.getFloat("service"));
 					
 					sessions.add(s);
 				}
@@ -170,8 +146,7 @@ public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<
 		
 		response.put("code", 200);
 		response.put("code_description", "OK");
-		response.put("user_id", user_id);
-		response.put("authentication_key", authentication_key);
+		response.put("class_id", class_id);
 		return response;
 	}
     
