@@ -1,4 +1,4 @@
-package users.papaya.com;
+package website.papaya.com;
 
 import static utils.papaya.com.ResponseGenerator.generate500;
 
@@ -19,7 +19,7 @@ import utils.papaya.com.AuthServiceType;
 import utils.papaya.com.Exception400;
 import utils.papaya.com.Validate;
 
-public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<String, Object>> {
+public class SessionsDump implements RequestHandler<Map<String, Object>, Map<String, Object>> {
 	/** Steps to implement a generic papaya API Lambda Function:
 	 * 
 	 * 	1.	Check request body (validate) for proper format of fields.
@@ -41,9 +41,10 @@ public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<
 		this.logger = context.getLogger();
 		Map<String, Object> response = new HashMap<String, Object>();
 		ArrayList<Map<String, Object>> classes = new ArrayList<Map<String, Object>>();
-		AuthServiceType service_type = AuthServiceType.NONE;
 		// Required request fields:
-		String user_id = "", authentication_key = "", class_id = "", service_user_id = "";
+		String professor_access_key = "";
+		//
+		String class_id = "";
 		
 		/*
 		 * 1. Check request body (validate) for proper format of fields:
@@ -62,15 +63,10 @@ public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<
 			// Find Paths:
 			querystring = Validate.field(input, "params");
 			querystring = Validate.field(querystring, "querystring");
-			
-			// 1. validate 'user_id'
-			user_id = Validate.user_id(querystring);
-			// 2. validate 'service' field is a recognizable type
-			service_type = Validate.service(querystring);
+		
 			// 3. validate 'authentication_key' is of length allowed?
 			// TODO: Determine more strict intro rules
-			authentication_key = Validate.authentication_key(querystring, service_type);
-			service_user_id = Validate.service_user_id(querystring, service_type);
+			professor_access_key = Validate.access_key(querystring);
 		} catch (Exception400 e400) {
 			logger.log(e400.getMessage());
 			return e400.getResponse();
@@ -92,16 +88,13 @@ public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<
 			 * 
 			 * 		1. Update authentication_key for user_id.
 			 */
-			String getClassInfo = "SELECT user_role, class_id, classname, description FROM classes AS c, users_classes AS uc WHERE uc.class_user_id='" + user_id + "' AND c.class_id=uc.user_class_id";
+			String getClassID = "SELECT class_id FROM classes WHERE professor_access_key='" + professor_access_key + "'";
 			Statement classStatement = con.createStatement();
-			ResultSet classResult = classStatement.executeQuery(getClassInfo);
+			ResultSet classResult = classStatement.executeQuery(getClassID);
 			
-			while (classResult.next()) {
+			if (classResult.next()) {
 				Map<String, Object> c = new HashMap<String, Object>();
 				c.put("class_id", classResult.getString("class_id"));
-				c.put("classname", classResult.getString("classname"));
-				c.put("descriptions", classResult.getString("description"));
-				c.put("user_role", classResult.getInt("user_role"));
 				
 				logger.log("Found class: " + classResult.getString("class_id") + "\n");
 				class_id = classResult.getString("class_id");
@@ -112,14 +105,13 @@ public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<
 						+ "INNER JOIN ( "
 						+ "SELECT DISTINCT user_session_id "
 						+ "FROM users_sessions "
-						+ "WHERE active = 1 "
-						+ ") activeCheck ON s.session_id = activeCheck.user_session_id "
-						+ ") allActive "
+						+ ") sessionCheck ON s.session_id = sessionCheck.user_session_id "
+						+ ") allSessions "
 						+ "INNER JOIN ( "
 						+ "SELECT DISTINCT class_session_id "
 						+ "FROM classes_sessions "
 						+ "WHERE session_class_id = '"+ class_id +"' "
-						+ ") classFilter ON allActive.session_id = classFilter.class_session_id;";
+						+ ") classFilter ON allSessions.session_id = classFilter.class_session_id;";
 				Statement sessionStatement = con.createStatement();
 				ResultSet sessionResult = sessionStatement.executeQuery(getSessionInfo);
 				logger.log(getSessionInfo);
@@ -170,8 +162,7 @@ public class LoadAllSessions implements RequestHandler<Map<String, Object>, Map<
 		
 		response.put("code", 200);
 		response.put("code_description", "OK");
-		response.put("user_id", user_id);
-		response.put("authentication_key", authentication_key);
+		response.put("class_id", class_id);
 		return response;
 	}
     

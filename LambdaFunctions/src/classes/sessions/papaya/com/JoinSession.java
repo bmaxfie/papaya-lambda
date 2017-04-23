@@ -121,6 +121,80 @@ public class JoinSession implements RequestHandler<Map<String, Object>, Map<Stri
 			}
 			statement.close();
 			
+			//brought from RemoveUserFromSessionUpdate Branch
+			logger.log("Before getCurrentSessionID\n");
+			//if current_session_id is set to something else, remove the user from that session and update their current_session_id to new
+			String getCurrentSessionID = "SELECT current_session_id FROM users WHERE user_id='" + user_id + "'";
+			statement = con.createStatement();
+			result = statement.executeQuery(getCurrentSessionID);
+			boolean curSessionIDExists = false;
+			String result_session_id = "";
+			if(result.next()) {
+				result_session_id = result.getString("current_session_id");
+				if(!(result_session_id == null) && !result_session_id.equals("")) {
+					curSessionIDExists = true;
+				}
+			}
+			result.close();
+			statement.close();
+			logger.log("Before checking cur_ses_id + " + curSessionIDExists + "\n");
+			//if current_session_id exists, remove user from that session and transfer host if necessary: should not happen if everything works properly
+			if(curSessionIDExists) {
+				String removeUserFromSession = "UPDATE users_sessions SET active=0 "
+						+ "WHERE session_user_id='" + user_id + "' AND user_session_id='" + result_session_id + "'";
+				statement = con.createStatement();
+				statement.execute(removeUserFromSession);
+				statement.close();
+				logger.log("after remove user, before isUserHost " + result_session_id +  "\n");
+				//if the user is the study session host
+				String isUserHost = "SELECT host_id FROM sessions WHERE session_id='" + result_session_id + "'";
+				statement = con.createStatement();
+				result = statement.executeQuery(isUserHost);
+				boolean userIsHost = false;
+				if(result.next()) {
+					if(result.getString("host_id").equals(user_id)) {
+						userIsHost = true;
+					}
+				}
+				result.close();
+				statement.close();
+
+				logger.log("after IsUserHost before checkIfEmpty\n");
+				String checkIfEmpty = "SELECT active, session_user_id FROM users_sessions WHERE user_session_id='" + result_session_id + "'";
+				statement = con.createStatement();
+				result = statement.executeQuery(checkIfEmpty);
+				boolean stillExists = false;
+				String newHostIfNeeded = "";
+				while(result.next()) {
+					if(result.getString("active") == "1") {
+						String idResult = result.getString("session_user_id");
+						if(!idResult.equals(user_id)) {
+							newHostIfNeeded = idResult;
+							stillExists = true;
+						}
+					}
+
+				}
+
+				result.close();
+				statement.close();
+				logger.log("after checkIfEmpty, before transferHost");
+				if(stillExists && userIsHost) {
+					//change host to newHostIfNeeded
+					String transferHost = "UPDATE sessions SET host_id='" + newHostIfNeeded + "' WHERE session_id='" + result_session_id + "'";
+					statement = con.createStatement();
+					statement.execute(transferHost);
+					statement.close();
+				}
+
+			}
+			logger.log("updating current session id to: " + session_id + "\n");
+			//update current_session_id to match the new session_id
+			String updateCurrentSessionID = "UPDATE users SET current_session_id='" + session_id + "' WHERE user_id='" + user_id + "'";
+			statement = con.createStatement();
+			statement.execute(updateCurrentSessionID);
+			statement.close();
+			//end brought code
 			
 			
 		} catch (SQLException ex) {
