@@ -1,4 +1,4 @@
-package website.papaya.com;
+package website.sessions.papaya.com;
 
 import static utils.papaya.com.ResponseGenerator.generate500;
 
