@@ -251,7 +251,7 @@ public class Validate
 				|| !((post_id = (String) json.get("post_id")) != null)) {
 		
 		throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
-				generate400("user_id does not exist.", "user_id"));
+				generate400("post_id does not exist.", "post_id"));
 		} else if (post_id.length() > 45) {
 			post_id = post_id.substring(0, 45);
 		}

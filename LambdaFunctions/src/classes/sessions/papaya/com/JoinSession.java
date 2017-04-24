@@ -113,7 +113,7 @@ public class JoinSession implements RequestHandler<Map<String, Object>, Map<Stri
 			
 			statement = con.createStatement();
 			if(pairExists && active == 0) {
-				String updateActive = "UPDATE users_sessions SET active=1 WHERE session_user_id='" + user_id + "' AND user_session_id='" + session_id + "'";;
+				String updateActive = "UPDATE users_sessions SET active=1 WHERE session_user_id='" + user_id + "' AND user_session_id='" + session_id + "'";
 				statement.execute(updateActive);
 			} else if(!pairExists) {
 				String insertUserIntoSession = "INSERT INTO users_sessions VALUES ( 1, '" + user_id + "', '" + session_id + "' )";
