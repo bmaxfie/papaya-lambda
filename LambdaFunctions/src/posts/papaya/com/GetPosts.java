@@ -120,6 +120,7 @@ public class GetPosts implements RequestHandler<Map<String, Object>, Map<String,
 			while (result.next()) {
 				Map<String, Object> post = new HashMap<String, Object>();
 				post.put("post_id", result.getString("post_id"));
+				post.put("post_user_id", result.getString("post_user_id"));
 				post.put("post_user_role", result.getString("post_user_role"));
 				post.put("timestamp", result.getString("timestamp"));
 				post.put("message", result.getString("message"));
