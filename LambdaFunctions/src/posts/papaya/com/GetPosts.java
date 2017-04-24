@@ -111,7 +111,10 @@ public class GetPosts implements RequestHandler<Map<String, Object>, Map<String,
 			 * 
 			 */
 
-			String getPosts = "SELECT * FROM posts WHERE post_session_id='" + session_id + "'";
+			//String getPosts = "SELECT * FROM posts WHERE post_session_id='" + session_id + "'";
+			String getPosts = "SELECT post_id, post_session_id, post_user_id, post_user_role, timestamp, message, visibility, username FROM "
+					+ "(SELECT * FROM posts WHERE post_session_id='" + session_id + "') post_t INNER JOIN users ON users.user_id=post_t.post_user_id";
+			
 			Statement statement = con.createStatement();
 			ResultSet result = statement.executeQuery(getPosts);
 			
@@ -120,6 +123,7 @@ public class GetPosts implements RequestHandler<Map<String, Object>, Map<String,
 			while (result.next()) {
 				Map<String, Object> post = new HashMap<String, Object>();
 				post.put("post_id", result.getString("post_id"));
+				post.put("username", result.getString("username"));
 				post.put("post_user_id", result.getString("post_user_id"));
 				post.put("post_user_role", result.getString("post_user_role"));
 				post.put("timestamp", result.getString("timestamp"));
