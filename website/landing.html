@@ -11,6 +11,8 @@
 
     <title>papaya - that study session app</title>
 
+    <link rel="icon" type="image/jpg" href="favicon.ico">
+
     <!-- Bootstrap Core CSS -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
 
@@ -42,7 +44,7 @@
             <div class="class-info two-thirds-width grey-trans">
                 <h1>Class Info:</h1>
                 <br>
-                <label class="row1">Name:</label><p class="ro2" id="class-name"></p>
+                <label class="row1">Name:</label><p class="row2" id="class-name"></p>
                 <label class="row1">Description:</label><p class="row2" id="class-description"></p>
                 <label class="row1">ID:</label><p class="row2" id="class-id"></p>
                 <label class="row1">Professor Access Key:</label><p class="row2" id="professor-access-key"></p>
@@ -53,10 +55,10 @@
                 <h2 class="black">Download Options:</h2>
                 <br>
                 <ul>
-                    <li class="btn btn-dark download">Download Students</li>
-                    <li class="btn btn-dark download">Download Sessions</li>
-                    <li class="btn btn-dark download">Download Student Session Activity</li>
-                    <li class="btn btn-dark download">Download Posts</li>
+                    <!--<li class="btn btn-dark download">Download Students</li>-->
+                    <li class="btn btn-dark download" onclick="downloadSessions()">Download Sessions</li>
+                    <li class="btn btn-dark download" onclick="downloadSessionActivity()">Download Session Activity</li>
+                    <!--<li class="btn btn-dark download">Download Posts</li>-->
                 </ul>
             </div>
         </div>
@@ -148,7 +150,63 @@
         };
 
         // Download CSV from API call:
+        function downloadSessions() {
+            xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    response = JSON.parse(this.responseText);
+                    
+                    if (response.code != 200)
+                        console.log("ERROR: " + response);
 
+                    var csvContent = "data:text/csv;charset=utf-8,Session ID,Host User ID,Description,Location Description,Start Date,Start Time,Duration (seconds),Latitude,Longitude,Is Sponsored\r\n";
+                    response.class.sessions.forEach(function(sessions, index) {
+                        var line = sessions.session_id + "," + sessions.host_id + "," + sessions.description + "," + sessions.location_desc + "," + sessions.start_time.split(" ").join(",") + "," + sessions.duration + "," + sessions.location_lat + "," + sessions.location_long + "," + sessions.sponsored + "\r\n";
+
+                        csvContent += line.replace(new RegExp("[\r\n]", "g"),"") + "\r\n";
+                    });
+
+                    var encodedUri = encodeURI(csvContent);
+                    var link = document.createElement("a");
+                    link.setAttribute("href", encodedUri);
+                    link.setAttribute("download", class_name_dom.innerHTML  + "_sessions.csv");
+                    link.style.display = "none";
+                    document.body.appendChild(link);
+                    link.click();
+                }
+            };
+            xhttp.open("GET", "https://a1ii3mxcs8.execute-api.us-west-2.amazonaws.com/Beta/website/sessions?access_key=" + access_key, true);
+            xhttp.send();
+        };
+
+        function downloadSessionActivity() {
+            xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    response = JSON.parse(this.responseText);
+                    
+                    if (response.code != 200)
+                        console.log("ERROR: " + response);
+
+                    var csvContent = "data:text/csv;charset=utf-8,Session ID,User ID,Active Status (1=Active),Username,Phone,Email,Service\r\n";
+                    response.class.sessions.forEach(function(sessions, index) {
+                        var line = sessions.session_id + "," + sessions.user_id + "," + sessions.active + "," + sessions.username + "," + sessions.phone + "," + sessions.email + "," + sessions.service + "\r\n";
+
+                        csvContent += line.replace(new RegExp("[\r\n]", "g"),"") + "\r\n";
+                    });
+
+                    var encodedUri = encodeURI(csvContent);
+                    var link = document.createElement("a");
+                    link.setAttribute("href", encodedUri);
+                    link.setAttribute("download", class_name_dom.innerHTML + "_sessions_activity.csv");
+                    link.style.display = "none";
+                    document.body.appendChild(link);
+                    link.click();
+                }
+            };
+            xhttp.open("GET", "https://a1ii3mxcs8.execute-api.us-west-2.amazonaws.com/Beta/website/sessions/activity?access_key=" + access_key, true);
+            xhttp.send();
+        };
 
     </script>
 
