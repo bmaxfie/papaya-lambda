@@ -39,7 +39,6 @@ public class ClassActivityDump implements RequestHandler<Map<String, Object>, Ma
 		this.context = context;
 		this.logger = context.getLogger();
 		Map<String, Object> response = new HashMap<String, Object>();
-		ArrayList<Map<String, Object>> classes = new ArrayList<Map<String, Object>>();
 		// Required request fields:
 		String professor_access_key = "";
 		//
@@ -93,10 +92,10 @@ public class ClassActivityDump implements RequestHandler<Map<String, Object>, Ma
 			
 			if (classResult.next()) {
 				Map<String, Object> c = new HashMap<String, Object>();
-				c.put("class_id", classResult.getString("class_id"));
-				
-				logger.log("Found class: " + classResult.getString("class_id") + "\n");
 				class_id = classResult.getString("class_id");
+				c.put("class_id", class_id);
+				
+				logger.log("Found class: " + class_id + "\n");
 				String getActivity = "SELECT DISTINCT * FROM (SELECT * FROM classes_sessions AS cs INNER JOIN users_sessions AS us ON (cs.class_session_id=us.user_session_id AND cs.session_class_id='" + class_id + "')) tablemerged INNER JOIN users AS ut ON ut.user_id=tablemerged.session_user_id";
 				Statement sessionStatement = con.createStatement();
 				ResultSet sessionResult = sessionStatement.executeQuery(getActivity);
@@ -106,22 +105,21 @@ public class ClassActivityDump implements RequestHandler<Map<String, Object>, Ma
 					logger.log("made it inside while loop");
 					Map<String, Object> s = new HashMap<String, Object>();
 					s.put("session_id", sessionResult.getString("class_session_id"));
-					s.put("active", sessionResult.getString("active"));
-					s.put("user_id", sessionResult.getInt("user_id"));
-					s.put("phone", sessionResult.getString("phone"));
+					s.put("active", sessionResult.getInt("active"));
+					s.put("user_id", sessionResult.getString("user_id"));
+					s.put("username", sessionResult.getString("username"));
+					s.put("phone", sessionResult.getLong("phone"));
 					s.put("email", sessionResult.getString("email"));
-					s.put("current_session_id", sessionResult.getBoolean("current_session_id"));
-					s.put("service", sessionResult.getFloat("service"));
+					s.put("service", sessionResult.getString("service"));
 					
 					sessions.add(s);
 				}
 				c.put("sessions", sessions);
-				classes.add(c);
+				response.put("class", c);
 				
 				sessionResult.close();
 				sessionStatement.close();
 			}
-			response.put("classes", classes);
 			
 			classResult.close();
 			classStatement.close();

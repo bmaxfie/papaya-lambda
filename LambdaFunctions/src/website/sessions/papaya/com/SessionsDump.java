@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -91,10 +92,11 @@ public class SessionsDump implements RequestHandler<Map<String, Object>, Map<Str
 			String getClassID = "SELECT class_id FROM classes WHERE professor_access_key='" + professor_access_key + "'";
 			Statement classStatement = con.createStatement();
 			ResultSet classResult = classStatement.executeQuery(getClassID);
+
+			Map<String, Object> class_ = new HashMap<String, Object>();
 			
-			if (classResult.next()) {
-				Map<String, Object> c = new HashMap<String, Object>();
-				c.put("class_id", classResult.getString("class_id"));
+			if (classResult.next() && classResult.isLast()) {
+				class_.put("class_id", classResult.getString("class_id"));
 				
 				logger.log("Found class: " + classResult.getString("class_id") + "\n");
 				class_id = classResult.getString("class_id");
@@ -115,9 +117,8 @@ public class SessionsDump implements RequestHandler<Map<String, Object>, Map<Str
 				Statement sessionStatement = con.createStatement();
 				ResultSet sessionResult = sessionStatement.executeQuery(getSessionInfo);
 				logger.log(getSessionInfo);
-				ArrayList<Map<String, Object>> sessions = new ArrayList<Map<String, Object>>();
+				List<Object> sessions = new ArrayList<Object>();
 				while (sessionResult.next()) {
-					logger.log("made it inside while loop");
 					Map<String, Object> s = new HashMap<String, Object>();
 					s.put("session_id", sessionResult.getString("session_id"));
 					s.put("host_id", sessionResult.getString("host_id"));
@@ -131,13 +132,12 @@ public class SessionsDump implements RequestHandler<Map<String, Object>, Map<Str
 					
 					sessions.add(s);
 				}
-				c.put("sessions", sessions);
-				classes.add(c);
+				class_.put("sessions", sessions);
 				
 				sessionResult.close();
 				sessionStatement.close();
 			}
-			response.put("classes", classes);
+			response.put("class", class_);
 			
 			classResult.close();
 			classStatement.close();
@@ -162,7 +162,6 @@ public class SessionsDump implements RequestHandler<Map<String, Object>, Map<Str
 		
 		response.put("code", 200);
 		response.put("code_description", "OK");
-		response.put("class_id", class_id);
 		return response;
 	}
     
