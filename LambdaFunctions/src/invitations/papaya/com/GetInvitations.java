@@ -1,5 +1,6 @@
 package invitations.papaya.com;
 
+import static utils.papaya.com.ResponseGenerator.generate404;
 import static utils.papaya.com.ResponseGenerator.generate500;
 
 import java.sql.Connection;
@@ -104,7 +105,11 @@ public class GetInvitations implements RequestHandler<Map<String, Object>, Map<S
 			 * SQL command: returns a list of friends for user: user_id
 			 * 
 			 */
-
+			if (!userIDExists(user_id, con)) {
+				logger.log("ERROR: 404 Not Found - user_id does not exist in database.");
+				return generate404("user_id not found in database.");
+			}
+			
 			String getInvitationInfo = "SELECT session_class_id as class_id, invitation_session_id as session_id, username, classname FROM "
 					+ "(SELECT session_class_id, invitation_session_id, username FROM "
 					+ "(SELECT invitation_session_id, username FROM "
@@ -130,7 +135,7 @@ public class GetInvitations implements RequestHandler<Map<String, Object>, Map<S
 			result.close();
 			statement.close();
 			
-			String deleteInvitations = "DELETE FROM invitations WHERE receiver_user_id='" + user_id + "'";
+			String deleteInvitations = "DELETE FROM invitations WHERE receiver_id='" + user_id + "'";
 			statement = con.createStatement();
 			statement.execute(deleteInvitations);
 			statement.close();
@@ -186,4 +191,19 @@ public class GetInvitations implements RequestHandler<Map<String, Object>, Map<S
 		return null;
 	}
 	
+	private boolean userIDExists(String user_id, Connection dbcon) throws SQLException {
+		String getUser = "SELECT user_id FROM users WHERE user_id='"+user_id+"'";
+		Statement statement = dbcon.createStatement();
+		ResultSet result = statement.executeQuery(getUser);
+		if (result.next()) {
+			result.close();
+			statement.close();
+			return true;
+		}
+		else {
+			result.close();
+			statement.close();
+			return false;
+		}
+	}
 }
