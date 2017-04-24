@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>papaya - that study session app</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="css/stylish-login.css" rel="stylesheet">
+
+    <!-- Custom Fonts -->
+    <link href="font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700,300italic,400italic,700italic" rel="stylesheet" type="text/css">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+</head>
+
+<body class="grey-trans">
+
+    <!-- Header -->
+    <header class="header two-thirds-width"></header>
+    <div class="text-vertical-center one-third-width full-height">
+        <div class="login-box">
+            <h1><i>papaya</i></h1>
+            <label class="login-label">Access key:</label>
+            <input type="text" class="login-input" autofocus>
+            <div class="help-block on-spaces">No spaces in access keys!</div>
+            <div class="help-block on-not-found">Access Key Invalid!</div>
+            <button class="btn-dark submit" onclick="attempt_to_log_in()">Login</button>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="js/jquery.js"></script>
+
+    <!-- Bootstrap Core JavaScript -->
+    <script src="js/bootstrap.min.js"></script>
+
+    <!-- Custom Theme JavaScript -->
+    <script>
+        var qs = (function(a) {
+            if (a == "") return {};
+            var b = {};
+            for (var i = 0; i < a.length; ++i)
+            {
+                var p=a[i].split('=', 2);
+                if (p.length == 1)
+                    b[p[0]] = "";
+                else
+                    b[p[0]] = decodeURIComponent(p[1].replace(/\+/g, " "));
+            }
+            return b;
+        })(window.location.search.substr(1).split('&'));
+
+        $('document').ready(function() {
+            var on_not_found = document.getElementsByClassName('on-not-found')[0];
+            var on_spaces = document.getElementsByClassName('on-spaces')[0];
+
+            if (qs["error"] &&qs["error"].localeCompare("true") == 0) {
+                console.log("Error = true");
+                on_spaces.style.visibility = "hidden";
+                on_spaces.style.display = "none";
+                on_not_found.style.visibility = "visible";
+                on_not_found.style.display = "block";
+            } else {
+                console.log("Error = false");
+                on_not_found.style.visibility = "hidden";
+                on_not_found.style.display = "none";
+                on_spaces.style.visibility = "hidden";
+                on_spaces.style.display = "block";
+            }
+        });
+        
+        function attempt_to_log_in() {
+            var on_not_found = document.getElementsByClassName('on-not-found')[0];
+            var on_spaces = document.getElementsByClassName('on-spaces')[0];
+
+            var access_key = document.getElementsByClassName('login-input')[0].value;
+            if (!access_key || access_key.indexOf(' ') > -1) {
+                on_spaces.style.visibility = "visible";
+                on_spaces.style.display = "block";
+                on_not_found.style.visibility = "hidden";
+                on_not_found.style.display = "none";
+            }
+            else {
+                access_key = access_key.replace(new RegExp("=", "g"),"%3D");
+                access_key = access_key.replace(new RegExp("\/", "g"),"%2F");
+                window.location.href = "landing.html?access_key=" + access_key;
+            }
+        };
+    </script>
+
+</body>
+
+</html>

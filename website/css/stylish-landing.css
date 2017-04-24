@@ -1,0 +1,134 @@
+/*!
+ * Start Bootstrap - Stylish Portfolio (http://startbootstrap.com/)
+ * Copyright 2013-2016 Start Bootstrap
+ * Licensed under MIT (https://github.com/BlackrockDigital/startbootstrap/blob/gh-pages/LICENSE)
+ */
+
+/* Global Styles */
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+}
+
+body {
+    font-family: "Source Sans Pro","Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
+.text-vertical-center {
+    display: table-cell;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.text-vertical-center h1 {
+    margin: 0;
+    padding: 0;
+    font-size: 4.5em;
+    font-weight: 700;
+}
+
+/* Custom Button Styles */
+
+.btn-dark {
+    border-radius: 0;
+    color: #fff;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.btn-dark:hover,
+.btn-dark:focus,
+.btn-dark:active {
+    color: #fff;
+    background-color: rgba(0,0,0,0.7);
+}
+
+.btn-light {
+    border-radius: 0;
+    color: #333;
+    background-color: rgb(255,255,255);
+}
+
+.btn-light:hover,
+.btn-light:focus,
+.btn-light:active {
+    color: #333;
+    background-color: rgba(255,255,255,0.8);
+}
+
+.download {
+    margin: 15px auto;
+    float: left;
+    clear: both;
+}
+
+.black {
+    color: rgb(0,0,0);
+}
+
+.row1 {
+    /*background-color: rgb(100,100,100);*/
+    font-size: 18px;
+    width: 200px;
+}
+
+.row2 {
+    /*background-color: rgb(120,120,120);*/
+    width: calc(100% - 200px);
+}
+
+/* Header */
+
+.background {
+    display: table;
+    width: 100%;
+    height: 100%;
+    background: url(../img/studying.jpg) no-repeat center center scroll;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    background-size: cover;
+    -o-background-size: cover;
+}
+
+.content-wrapper {
+    margin: 50px;
+    display: none;
+}
+
+.loading-wrapper {
+    background: rgba(150,150,150,0.8);
+    text-align: center;
+    margin: 50px;
+    padding: calc(25% - 75px) calc(25% - 75px);
+}
+
+.class-info {
+    padding: 20px;
+}
+
+.class-table {
+    padding: 20px;
+}
+
+.two-thirds-width {
+    width: 66%;
+    float: left;
+}
+
+.full-height {
+    height: 100%;
+}
+
+.one-third-width {
+    width: 34%;
+    float: left;
+}
+
+.grey-trans {
+    background-color: rgba(200, 200, 200, .8);
+}
+
+.darker-grey-trans {
+    background-color: rgba(100, 100, 100, .9);
+}
