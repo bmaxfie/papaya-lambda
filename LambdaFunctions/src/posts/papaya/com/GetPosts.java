@@ -7,7 +7,12 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -111,6 +116,7 @@ public class GetPosts implements RequestHandler<Map<String, Object>, Map<String,
 			ResultSet result = statement.executeQuery(getPosts);
 			
 			ArrayList<Map<String, Object>> posts = new ArrayList<Map<String, Object>>();
+			
 			while (result.next()) {
 				Map<String, Object> post = new HashMap<String, Object>();
 				post.put("post_id", result.getString("post_id"));
@@ -121,7 +127,23 @@ public class GetPosts implements RequestHandler<Map<String, Object>, Map<String,
 				posts.add(post);
 			}
 			
-			response.put("posts", posts.toArray());
+			Collections.sort(posts, new Comparator<Map<String, Object>>() {
+				@Override
+				public int compare(Map<String, Object> arg0, Map<String, Object> arg1) {
+					SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+					try {
+						Date d1 = dateFormatter.parse((String) arg0.get("timestamp"));
+						Date d2 = dateFormatter.parse((String) arg1.get("timestamp"));
+						return d1.compareTo(d2);
+					} catch (ParseException e) {
+						e.printStackTrace();
+					}
+					
+					return 0;
+				}
+			});
+			
+			response.put("posts", posts);
 			
 			result.close();
 			statement.close();
