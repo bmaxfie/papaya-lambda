@@ -129,6 +129,45 @@ public class RemoveUser implements RequestHandler<Map<String, Object>, Map<Strin
 			statement.execute(updateUser);
 			statement.close();
 			
+			String checkIfEmpty = "SELECT active, session_user_id FROM users_sessions WHERE user_session_id='" + current_session_id + "'";
+			statement = con.createStatement();
+			result = statement.executeQuery(checkIfEmpty);
+			boolean stillExists = false;
+			String newHostIfNeeded = "";
+			while(result.next()) {
+				if(result.getString("active") == "1") {
+					String idResult = result.getString("session_user_id");
+					if(!idResult.equals(user_id)) {
+						newHostIfNeeded = idResult;
+						stillExists = true;
+					}
+				}
+
+			}
+			result.close();
+			statement.close();
+			logger.log("After check if empty \n");
+			//if the user is the study session host
+			String isUserHost = "SELECT host_id FROM sessions WHERE session_id='" + current_session_id + "'";
+			statement = con.createStatement();
+			result = statement.executeQuery(isUserHost);
+			boolean userIsHost = false;
+			if(result.next()) {
+				if(result.getString("host_id").equals(user_id)) {
+					userIsHost = true;
+				}
+			}
+			result.close();
+			statement.close();
+
+			if(stillExists && userIsHost) {
+				//change host to newHostIfNeeded
+				String transferHost = "UPDATE sessions SET host_id='" + newHostIfNeeded + "' WHERE session_id='" + current_session_id + "'";
+				statement = con.createStatement();
+				statement.execute(transferHost);
+				statement.close();
+			}
+			logger.log("after transferhost\n");
 			
 		} catch (SQLException ex) {
 			// handle any errors

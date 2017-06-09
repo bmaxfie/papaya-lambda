@@ -243,6 +243,25 @@ public class Validate
 		return session_id;
 	}
 	
+	public static String post_id(Map<String, Object> json) throws Exception400 {
+		String post_id;
+		
+		if (!json.containsKey("post_id")
+				|| !(json.get("post_id") instanceof String)
+				|| !((post_id = (String) json.get("post_id")) != null)) {
+		
+		throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+				generate400("post_id does not exist.", "post_id"));
+		} else if (post_id.length() > 45) {
+			post_id = post_id.substring(0, 45);
+		}
+
+		post_id = post_id.replaceAll("%2F", "/");
+		post_id = post_id.replaceAll("%2B", "+");
+		
+		return post_id;
+	}
+	
 	public static int duration(Map<String, Object> json) throws Exception400 {
 		Integer duration;
 		
@@ -290,6 +309,44 @@ public class Validate
 		return description;
 	}
 	
+	public static String message(Map<String, Object> json, String fieldname) throws Exception400 {
+		String message;
+		
+		if (!json.containsKey(fieldname)
+				|| !(json.get(fieldname) instanceof String)
+				|| !((message = (String) json.get(fieldname)) != null)) {
+			
+			throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+					generate400(fieldname+" does not exist.", fieldname));
+		}
+		else if (message.length() > 255)
+			throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+					generate400(fieldname+" is too long (> 255 characters).", fieldname));
+		
+		return message;
+	}
+	
+	public static int visibility(Map<String, Object> json) throws Exception400 {
+		String visible;
+		
+		if (!json.containsKey("visibility")
+				|| !(json.get("visibility") instanceof String)
+				|| !((visible = (String) json.get("visibility")) != null)) {
+			
+			throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+					generate400("visibility does not exist.", "visibility"));
+		}
+		int visibility = -1;
+		try {
+			visibility = Integer.parseInt(visible);
+		} catch(Exception e) {
+			throw new Exception400("ERROR: 400 Bad Request - Returned to client. Required keys did not exist or are empty.",
+					generate400("visibility is not a valid integer.", "visibility"));
+		}
+
+		return visibility;
+	}
+	
 	public static Boolean sponsored(Map<String, Object> json) throws Exception400 {
 		Boolean sponsored;
 		
@@ -318,6 +375,8 @@ public class Validate
 		} else if (access_key.length() > 45) {
 			access_key = access_key.substring(0, 45);
 		}
+		access_key = access_key.replaceAll("%2F", "/");
+		access_key = access_key.replaceAll("%3D", "=");
 		
 		return access_key;
 	}

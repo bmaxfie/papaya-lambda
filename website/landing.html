@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>papaya - that study session app</title>
+
+    <link rel="icon" type="image/jpg" href="favicon.ico">
+
+    <!-- Bootstrap Core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="css/stylish-landing.css" rel="stylesheet">
+
+    <!-- Custom Fonts -->
+    <link href="font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700,300italic,400italic,700italic" rel="stylesheet" type="text/css">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+</head>
+
+<body>
+
+    <!-- Header -->
+    <header class="background">
+        <div class="loading-wrapper">
+            <i class="fa fa-refresh fa-spin fa-3x fa-fw"></i>
+            <span class="sr-only">Loading...</span>
+        </div>
+        <div class="content-wrapper">
+            <div class="class-info two-thirds-width grey-trans">
+                <h1>Class Info:</h1>
+                <br>
+                <label class="row1">Name:</label><p class="row2" id="class-name"></p>
+                <label class="row1">Description:</label><p class="row2" id="class-description"></p>
+                <label class="row1">ID:</label><p class="row2" id="class-id"></p>
+                <label class="row1">Professor Access Key:</label><p class="row2" id="professor-access-key"></p>
+                <label class="row1">TA Access Key:</label><p class="row2" id="ta-access-key"></p>
+                <label class="row1">Student Access Key:</label><p class="row2" id="student-access-key"></p>
+            </div>
+            <div class="class-table one-third-width darker-grey-trans full-height">
+                <h2 class="black">Download Options:</h2>
+                <br>
+                <ul>
+                    <!--<li class="btn btn-dark download">Download Students</li>-->
+                    <li class="btn btn-dark download" onclick="downloadSessions()">Download Sessions</li>
+                    <li class="btn btn-dark download" onclick="downloadSessionActivity()">Download Session Activity</li>
+                    <!--<li class="btn btn-dark download">Download Posts</li>-->
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <!-- jQuery -->
+    <script src="js/jquery.js"></script>
+
+    <!-- Bootstrap Core JavaScript -->
+    <script src="js/bootstrap.min.js"></script>
+
+    <!-- Custom Theme JavaScript -->
+    <script>
+        // GLOBALS:
+        var response = null;
+        var class_name_dom, class_id_dom, class_description_dom, student_key_dom, ta_key_dom, professor_key_dom;
+        var loaded = false;
+
+        // Load URL parameters:
+        var qs = (function(a) {
+            if (a == "") return {};
+            var b = {};
+            for (var i = 0; i < a.length; ++i)
+            {
+                var p=a[i].split('=', 2);
+                if (p.length == 1)
+                    b[p[0]] = "";
+                else
+                    b[p[0]] = decodeURIComponent(p[1].replace(/\+/g, " "));
+            }
+            return b;
+        })(window.location.search.substr(1).split('&'));
+        access_key = qs["access_key"].replace(new RegExp("=", "g"),"%3D");
+        access_key = access_key.replace(new RegExp("\/", "g"),"%2F");
+
+
+        // Redirect IF 'access_key' parameter doesn't exist
+        if (!access_key) {
+            window.location.href = "login.html?error=true";
+        }
+
+        // API call to get class data
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                response = JSON.parse(this.responseText);
+                console.log(response);
+                if (response.code == 404)
+                    window.location.href = "login.html?error=true";
+
+                if (loaded == true) 
+                    fillTable();
+            }
+        };
+        xhttp.open("GET", "https://a1ii3mxcs8.execute-api.us-west-2.amazonaws.com/Beta/website?access_key=" + access_key, true);
+        xhttp.send();
+
+
+        // ON PAGE READY:
+        $('document').ready(function() {
+            class_name_dom = document.getElementById('class-name');
+            class_description_dom = document.getElementById('class-description');
+            class_id_dom = document.getElementById('class-id');
+            student_key_dom = document.getElementById('student-access-key');
+            ta_key_dom = document.getElementById('ta-access-key');
+            professor_key_dom = document.getElementById('professor-access-key');
+
+            loaded = true;
+
+            if (response != null)
+                fillTable();
+        });
+
+        // Fill class data table if LOADED and API call complete:
+        function fillTable() {
+            if (response == null) {
+                console.log("fillTable() called but response is null.");
+                return;
+            }
+            class_name_dom.innerHTML = response.classname;
+            class_id_dom.innerHTML = response.class_id;
+            class_description_dom.innerHTML = response.description;
+            student_key_dom.innerHTML = response.student_access_key;
+            ta_key_dom.innerHTML = response.ta_access_key;
+            professor_key_dom.innerHTML = response.professor_access_key;
+
+            document.getElementsByClassName("content-wrapper")[0].style.display = "block";
+            document.getElementsByClassName("loading-wrapper")[0].style.display = "none";
+        };
+
+        // Download CSV from API call:
+        function downloadSessions() {
+            xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    response = JSON.parse(this.responseText);
+                    
+                    if (response.code != 200)
+                        console.log("ERROR: " + response);
+
+                    var csvContent = "data:text/csv;charset=utf-8,Session ID,Host User ID,Description,Location Description,Start Date,Start Time,Duration (seconds),Latitude,Longitude,Is Sponsored\r\n";
+                    response.class.sessions.forEach(function(sessions, index) {
+                        var line = sessions.session_id + "," + sessions.host_id + "," + sessions.description + "," + sessions.location_desc + "," + sessions.start_time.split(" ").join(",") + "," + sessions.duration + "," + sessions.location_lat + "," + sessions.location_long + "," + sessions.sponsored + "\r\n";
+
+                        csvContent += line.replace(new RegExp("[\r\n]", "g"),"") + "\r\n";
+                    });
+
+                    var encodedUri = encodeURI(csvContent);
+                    var link = document.createElement("a");
+                    link.setAttribute("href", encodedUri);
+                    link.setAttribute("download", class_name_dom.innerHTML  + "_sessions.csv");
+                    link.style.display = "none";
+                    document.body.appendChild(link);
+                    link.click();
+                }
+            };
+            xhttp.open("GET", "https://a1ii3mxcs8.execute-api.us-west-2.amazonaws.com/Beta/website/sessions?access_key=" + access_key, true);
+            xhttp.send();
+        };
+
+        function downloadSessionActivity() {
+            xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    response = JSON.parse(this.responseText);
+                    
+                    if (response.code != 200)
+                        console.log("ERROR: " + response);
+
+                    var csvContent = "data:text/csv;charset=utf-8,Session ID,User ID,Active Status (1=Active),Username,Phone,Email,Service\r\n";
+                    response.class.sessions.forEach(function(sessions, index) {
+                        var line = sessions.session_id + "," + sessions.user_id + "," + sessions.active + "," + sessions.username + "," + sessions.phone + "," + sessions.email + "," + sessions.service + "\r\n";
+
+                        csvContent += line.replace(new RegExp("[\r\n]", "g"),"") + "\r\n";
+                    });
+
+                    var encodedUri = encodeURI(csvContent);
+                    var link = document.createElement("a");
+                    link.setAttribute("href", encodedUri);
+                    link.setAttribute("download", class_name_dom.innerHTML + "_sessions_activity.csv");
+                    link.style.display = "none";
+                    document.body.appendChild(link);
+                    link.click();
+                }
+            };
+            xhttp.open("GET", "https://a1ii3mxcs8.execute-api.us-west-2.amazonaws.com/Beta/website/sessions/activity?access_key=" + access_key, true);
+            xhttp.send();
+        };
+
+    </script>
+
+</body>
+
+</html>
